@@ -144,6 +144,44 @@ body {
 .form-input::placeholder { color: #94A3B8; }
 .hint-text { font-weight: 400; font-size: 12px; color: #94A3B8; text-transform: none; }
 
+/* Shelf-life unit selector */
+.shelf-life-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.shelf-life-row .shelf-life-value {
+  flex: 1;
+  min-width: 0;
+}
+.unit-selector {
+  display: flex;
+  background: var(--color-border);
+  border-radius: var(--radius-xs);
+  padding: 3px;
+  flex-shrink: 0;
+}
+.unit-btn {
+  padding: 8px 14px;
+  border: none;
+  background: transparent;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: all .2s;
+  min-width: 36px;
+  min-height: 44px;
+  text-align: center;
+}
+.unit-btn.active {
+  background: var(--color-surface);
+  color: var(--color-primary);
+  box-shadow: var(--shadow);
+}
+.unit-btn:active { transform: scale(.95); }
+
 /* Expiry Preview */
 .expiry-preview {
   background: var(--color-primary-light);
@@ -420,9 +458,16 @@ body {
       </div>
 
       <div class="form-section">
-        <label>⏳ 保质期（天）</label>
-        <input type="number" class="form-input" id="shelf-life"
-               placeholder="例如：7" min="1" max="3650" inputmode="numeric">
+        <label>⏳ 保质期</label>
+        <div class="shelf-life-row">
+          <input type="number" class="form-input shelf-life-value" id="shelf-life"
+                 placeholder="例如：7" min="1" max="3650" inputmode="numeric">
+          <div class="unit-selector" id="shelf-life-unit">
+            <button type="button" class="unit-btn active" data-unit="day">天</button>
+            <button type="button" class="unit-btn" data-unit="month">月</button>
+            <button type="button" class="unit-btn" data-unit="year">年</button>
+          </div>
+        </div>
       </div>
 
       <div class="expiry-preview hidden" id="expiry-preview">
@@ -534,6 +579,56 @@ function addDaysISO(iso, n) {
   return toISODate(d2);
 }
 
+/**
+ * Add value * units to an ISO date. Handles month/year rollover
+ * correctly (Jan 31 + 1 month → Feb 28, Feb 29 + 1 year → Feb 28).
+ */
+function addTimeISO(iso, value, unit) {
+  if (!value || value <= 0) return iso;
+  const [y, m, d] = parseISO(iso);
+  const p = n => String(n).padStart(2, '0');
+
+  if (unit === 'day') {
+    return addDaysISO(iso, value);
+  }
+  if (unit === 'month') {
+    const totalMonths = m - 1 + value;
+    const newYear = y + Math.floor(totalMonths / 12);
+    const newMonth = (totalMonths % 12 + 12) % 12;
+    // Days in the target month (Date.UTC day 0 = last day of previous month)
+    const daysInNewMonth = new Date(Date.UTC(newYear, newMonth + 1, 0)).getUTCDate();
+    const newDay = Math.min(d, daysInNewMonth);
+    return `${newYear}-${p(newMonth + 1)}-${p(newDay)}`;
+  }
+  if (unit === 'year') {
+    const newYear = y + value;
+    // Handle Feb 29 in leap year → Feb 28 in non-leap year
+    const daysInMonth = new Date(Date.UTC(newYear, m, 0)).getUTCDate();
+    const newDay = Math.min(d, daysInMonth);
+    return `${newYear}-${p(m)}-${p(newDay)}`;
+  }
+  return iso;
+}
+
+/**
+ * Reverse-compute shelf-life value in the given unit between two dates.
+ * Used when the user manually enters an expiry date.
+ */
+function computeShelfLife(prodISO, expiryISO, unit) {
+  const [py, pm, pd] = parseISO(prodISO);
+  const [ey, em, ed] = parseISO(expiryISO);
+  const totalDays = Math.round((Date.UTC(ey, em - 1, ed) - Date.UTC(py, pm - 1, pd)) / 86400000);
+
+  if (unit === 'day') return Math.max(0, totalDays);
+  if (unit === 'year') return Math.max(0, Math.round(totalDays / 365));
+  // month: count how many months fit between prod and expiry
+  if (unit === 'month') {
+    // Round to nearest month using average month length
+    return Math.max(0, Math.round(totalDays / 30.4375));
+  }
+  return Math.max(0, totalDays);
+}
+
 // ── Status helpers ──
 
 function daysLeftLabel(d) {
@@ -562,6 +657,14 @@ function getLevelLabel(d) {
 function formatDate(iso) {
   const [y, m, d] = parseISO(iso);
   return y + '年' + m + '月' + d + '日';
+}
+
+function formatShelfLife(item) {
+  const val = item.shelfLifeDays;
+  const unit = item.shelfLifeUnit || 'day';
+  if (unit === 'year') return '保质期 ' + val + ' 年';
+  if (unit === 'month') return '保质期 ' + val + ' 个月';
+  return '保质期 ' + val + ' 天';
 }
 
 // ── Data layer ──
@@ -626,13 +729,14 @@ function switchTab(tabId) {
 function updatePreview() {
   const prodDate = document.getElementById('prod-date').value;
   const days = parseInt(document.getElementById('shelf-life').value);
+  const unit = getSelectedUnit();
   const expiryInput = document.getElementById('expiry-date');
   const preview = document.getElementById('expiry-preview');
   const text = document.getElementById('expiry-preview-text');
 
   // When production date + shelf life are both filled, auto-calculate expiry
   if (prodDate && days > 0) {
-    const expStr = addDaysISO(prodDate, days);
+    const expStr = addTimeISO(prodDate, days, unit);
     // Only auto-fill if user hasn't manually set a different expiry
     if (!expiryInput.dataset.manual || expiryInput.dataset.manual === 'false') {
       expiryInput.value = expStr;
@@ -654,6 +758,11 @@ function updatePreview() {
   }
 }
 
+function getSelectedUnit() {
+  const activeBtn = document.querySelector('#shelf-life-unit .unit-btn.active');
+  return activeBtn ? activeBtn.dataset.unit : 'day';
+}
+
 // ── Add food ──
 
 function addFood() {
@@ -661,38 +770,35 @@ function addFood() {
   if (!name) { showToast('请输入菜品名称'); return; }
 
   const prodDate = document.getElementById('prod-date').value;
-  const shelfLifeDays = parseInt(document.getElementById('shelf-life').value);
+  const shelfLifeValue = parseInt(document.getElementById('shelf-life').value);
+  const shelfLifeUnit = getSelectedUnit();
   const expiryInput = document.getElementById('expiry-date');
   const directExpiry = expiryInput.value;
   const isManualExpiry = expiryInput.dataset.manual === 'true';
 
-  let finalExpiryDate, finalProdDate, finalShelfLife;
+  let finalExpiryDate, finalProdDate, finalShelfLife, finalShelfLifeUnit;
 
   if (isManualExpiry && directExpiry) {
     // User directly entered the expiry date
     if (!directExpiry) { showToast('请选择到期日期'); return; }
     finalExpiryDate = directExpiry;
     finalProdDate = prodDate || todayISO();
-    // Calculate approximate shelf life
-    const [ey, em, ed] = parseISO(finalExpiryDate);
-    const [py, pm, pd] = parseISO(finalProdDate);
-    finalShelfLife = Math.round((Date.UTC(ey, em - 1, ed) - Date.UTC(py, pm - 1, pd)) / 86400000);
-    if (finalShelfLife < 0) finalShelfLife = 0;
-  } else if (prodDate && shelfLifeDays > 0) {
+    finalShelfLifeUnit = shelfLifeUnit;
+    finalShelfLife = computeShelfLife(finalProdDate, finalExpiryDate, shelfLifeUnit);
+  } else if (prodDate && shelfLifeValue > 0) {
     // Calculate expiry from production date + shelf life
     finalProdDate = prodDate;
-    finalShelfLife = shelfLifeDays;
-    finalExpiryDate = addDaysISO(prodDate, shelfLifeDays);
+    finalShelfLife = shelfLifeValue;
+    finalShelfLifeUnit = shelfLifeUnit;
+    finalExpiryDate = addTimeISO(prodDate, shelfLifeValue, shelfLifeUnit);
   } else if (directExpiry) {
     // Only expiry date filled
     finalExpiryDate = directExpiry;
     finalProdDate = prodDate || todayISO();
-    const [ey, em, ed] = parseISO(finalExpiryDate);
-    const [py, pm, pd] = parseISO(finalProdDate);
-    finalShelfLife = Math.round((Date.UTC(ey, em - 1, ed) - Date.UTC(py, pm - 1, pd)) / 86400000);
-    if (finalShelfLife < 0) finalShelfLife = 0;
+    finalShelfLifeUnit = shelfLifeUnit;
+    finalShelfLife = computeShelfLife(finalProdDate, finalExpiryDate, shelfLifeUnit);
   } else {
-    showToast('请填写生产日期+保质天数，或直接输入到期日期');
+    showToast('请填写生产日期+保质期，或直接输入到期日期');
     return;
   }
 
@@ -702,6 +808,7 @@ function addFood() {
     productionDate: finalProdDate,
     expiryDate: finalExpiryDate,
     shelfLifeDays: finalShelfLife,
+    shelfLifeUnit: finalShelfLifeUnit,
     createdAt: Date.now(),
   };
 
@@ -837,6 +944,10 @@ function renderFoodList() {
     expSpan.textContent = '📅 ' + formatDate(item.expiryDate);
     const dotSpan = document.createElement('span');
     dotSpan.textContent = '·';
+    const shelfSpan = document.createElement('span');
+    shelfSpan.textContent = '📦 ' + formatShelfLife(item);
+    const dotSpan2 = document.createElement('span');
+    dotSpan2.textContent = '·';
     const leftSpan = document.createElement('span');
     leftSpan.textContent = '⏳ ' + daysLeftLabel(dl);
 
@@ -844,6 +955,8 @@ function renderFoodList() {
     dates.appendChild(arrowSpan);
     dates.appendChild(expSpan);
     dates.appendChild(dotSpan);
+    dates.appendChild(shelfSpan);
+    dates.appendChild(dotSpan2);
     dates.appendChild(leftSpan);
 
     // Card actions
@@ -924,6 +1037,20 @@ function init() {
   // Allow Enter key in name field to submit
   document.getElementById('food-name').addEventListener('keydown', e => {
     if (e.key === 'Enter') addFood();
+  });
+
+  // Unit selector: switch between 天/月/年 and adjust max
+  document.querySelectorAll('#shelf-life-unit .unit-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('#shelf-life-unit .unit-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const shelfInput = document.getElementById('shelf-life');
+      const unit = btn.dataset.unit;
+      if (unit === 'day') shelfInput.max = 3650;
+      else if (unit === 'month') shelfInput.max = 120;
+      else shelfInput.max = 10;
+      updatePreview();
+    });
   });
 
   // Restore tab from URL hash
