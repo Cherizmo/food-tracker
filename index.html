@@ -1,0 +1,992 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="保质期管家">
+<meta name="theme-color" content="#4F46E5">
+<meta name="description" content="食品保质期管理工具 - 轻松追踪食材新鲜度">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/svg+xml" href="icon.svg">
+<link rel="apple-touch-icon" href="icon.svg">
+<title>保质期管家</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --color-primary: #4F46E5;
+  --color-primary-light: #EEF2FF;
+  --color-danger: #DC2626;
+  --color-danger-bg: #FEF2F2;
+  --color-danger-border: #FECACA;
+  --color-warning: #EA580C;
+  --color-warning-bg: #FFF7ED;
+  --color-warning-border: #FED7AA;
+  --color-caution: #CA8A04;
+  --color-caution-bg: #FEFCE8;
+  --color-caution-border: #FEF08A;
+  --color-safe: #16A34A;
+  --color-safe-bg: #F0FDF4;
+  --color-safe-border: #BBF7D0;
+  --color-bg: #F8FAFC;
+  --color-surface: #FFFFFF;
+  --color-text: #1E293B;
+  --color-text-secondary: #64748B;
+  --color-border: #E2E8F0;
+  --radius: 16px;
+  --radius-sm: 10px;
+  --radius-xs: 8px;
+  --shadow: 0 1px 3px rgba(0,0,0,.06), 0 1px 2px rgba(0,0,0,.04);
+  --shadow-lg: 0 10px 25px rgba(0,0,0,.08), 0 4px 10px rgba(0,0,0,.04);
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 16px);
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", "Helvetica Neue", sans-serif;
+  background: var(--color-bg);
+  color: var(--color-text);
+  line-height: 1.5;
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  justify-content: center;
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  color-scheme: light;
+  -webkit-user-select: none;
+}
+
+.app-container {
+  width: 100%;
+  max-width: 480px;
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  background: var(--color-bg);
+  position: relative;
+}
+
+/* ── Header ── */
+.header {
+  background: var(--color-surface);
+  padding: calc(12px + var(--safe-top)) 20px 14px;
+  text-align: center;
+  border-bottom: 1px solid var(--color-border);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+.header-logo { font-size: 28px; display: block; margin-bottom: 2px; }
+.header h1 { font-size: 18px; font-weight: 700; letter-spacing: -.3px; }
+.header .subtitle { font-size: 12px; color: var(--color-text-secondary); }
+
+/* ── Content ── */
+.content { flex: 1; padding: 16px 20px; padding-bottom: calc(88px + var(--safe-bottom)); }
+.tab-content { display: none; animation: fadeIn .25s ease; }
+.tab-content.active { display: block; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+/* ── List Header ── */
+.list-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+.list-count { font-size: 13px; color: var(--color-text-secondary); font-weight: 600; }
+.btn-clean {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-danger);
+  background: var(--color-danger-bg);
+  border: 1px solid var(--color-danger-border);
+  padding: 6px 12px;
+  border-radius: 99px;
+  cursor: pointer;
+  transition: all .2s;
+}
+.btn-clean:active { transform: scale(.96); opacity: .8; }
+.btn-clean.hidden { display: none; }
+
+/* ── Form ── */
+.form-section { margin-bottom: 20px; }
+.form-section label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  margin-bottom: 6px;
+  letter-spacing: .3px;
+  text-transform: uppercase;
+}
+.form-input {
+  width: 100%;
+  padding: 14px 16px;
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font-size: 16px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  transition: all .2s;
+  -webkit-appearance: none;
+  appearance: none;
+  outline: none;
+}
+.form-input:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(79,70,229,.1);
+}
+.form-input::placeholder { color: #94A3B8; }
+.hint-text { font-weight: 400; font-size: 12px; color: #94A3B8; text-transform: none; }
+
+/* Expiry Preview */
+.expiry-preview {
+  background: var(--color-primary-light);
+  border-radius: var(--radius-sm);
+  padding: 12px 16px;
+  margin-top: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: var(--color-primary);
+  font-weight: 600;
+}
+.expiry-preview .preview-icon { font-size: 18px; }
+.expiry-preview.hidden { display: none; }
+
+/* Submit Button */
+.btn-submit {
+  width: 100%;
+  padding: 16px;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: 17px;
+  font-weight: 700;
+  cursor: pointer;
+  background: var(--color-primary);
+  color: #fff;
+  transition: all .2s;
+  box-shadow: 0 4px 12px rgba(79,70,229,.3);
+  letter-spacing: -.2px;
+}
+.btn-submit:active { transform: scale(.98); opacity: .9; }
+
+/* ── Food Cards ── */
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--color-text-secondary);
+}
+.empty-state .icon { font-size: 64px; display: block; margin-bottom: 16px; }
+.empty-state h3 { font-size: 18px; font-weight: 700; color: var(--color-text); margin-bottom: 6px; }
+.empty-state p { font-size: 14px; }
+
+.food-list { display: flex; flex-direction: column; gap: 10px; }
+
+.food-card {
+  background: var(--color-surface);
+  border-radius: var(--radius);
+  padding: 16px;
+  box-shadow: var(--shadow);
+  border-left: 4px solid transparent;
+  transition: all .2s;
+  position: relative;
+  overflow: hidden;
+  cursor: default;
+}
+.food-card:active { transform: scale(.99); }
+
+.food-card.expired { border-left-color: #991B1B; background: #FEE2E2; }
+.food-card.danger  { border-left-color: var(--color-danger); background: var(--color-danger-bg); }
+.food-card.warning { border-left-color: var(--color-warning); background: var(--color-warning-bg); }
+.food-card.caution { border-left-color: var(--color-caution); background: var(--color-caution-bg); }
+.food-card.safe    { border-left-color: var(--color-safe); background: var(--color-safe-bg); }
+
+.food-card.expired .card-name { text-decoration: line-through; color: #991B1B; }
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 8px;
+}
+.card-name {
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: -.2px;
+  flex: 1;
+  margin-right: 8px;
+}
+.card-tag {
+  font-size: 12px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 99px;
+  white-space: nowrap;
+  letter-spacing: .2px;
+  flex-shrink: 0;
+}
+.expired .card-tag { background: #991B1B; color: #fff; }
+.danger  .card-tag { background: var(--color-danger); color: #fff; }
+.warning .card-tag { background: var(--color-warning); color: #fff; }
+.caution .card-tag { background: var(--color-caution); color: #fff; }
+.safe    .card-tag { background: var(--color-safe); color: #fff; }
+
+.card-dates {
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  margin-bottom: 10px;
+}
+.card-dates span { display: inline-flex; align-items: center; gap: 3px; }
+
+.card-actions { display: flex; gap: 8px; }
+
+.btn-sm {
+  padding: 8px 14px;
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-xs);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all .2s;
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 44px;
+}
+.btn-sm:active { transform: scale(.96); }
+.btn-sm.eat { color: var(--color-safe); border-color: var(--color-safe-border); }
+.btn-sm.eat:active { background: var(--color-safe); color: #fff; border-color: var(--color-safe); }
+.btn-sm.delete { color: var(--color-danger); border-color: var(--color-danger-border); }
+.btn-sm.delete:active { background: var(--color-danger); color: #fff; border-color: var(--color-danger); }
+
+/* ── Bottom Nav ── */
+.bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 480px;
+  background: rgba(255,255,255,.92);
+  border-top: 1px solid var(--color-border);
+  display: flex;
+  padding: 6px 20px;
+  padding-bottom: calc(6px + var(--safe-bottom));
+  gap: 8px;
+  z-index: 10;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+.bottom-nav .nav-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 8px 6px;
+  border: none;
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  border-radius: var(--radius-xs);
+  transition: all .2s;
+  position: relative;
+  min-height: 44px;
+  justify-content: center;
+}
+.bottom-nav .nav-item.active { color: var(--color-primary); }
+.bottom-nav .nav-item .nav-icon { font-size: 22px; position: relative; }
+.bottom-nav .nav-item .nav-badge {
+  position: absolute;
+  top: -4px;
+  right: -14px;
+  background: var(--color-danger);
+  color: #fff;
+  font-size: 10px;
+  min-width: 18px;
+  height: 18px;
+  border-radius: 99px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  line-height: 1;
+}
+
+/* ── Toast ── */
+.toast {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%) translateY(-120px);
+  background: #1E293B;
+  color: #fff;
+  padding: 12px 24px;
+  border-radius: 99px;
+  font-size: 14px;
+  font-weight: 600;
+  z-index: 100;
+  transition: transform .3s cubic-bezier(.34,1.56,.64,1);
+  box-shadow: 0 8px 30px rgba(0,0,0,.25);
+  pointer-events: none;
+}
+.toast.show { transform: translateX(-50%) translateY(0); }
+
+/* ── Confirm Dialog ── */
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.4);
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: fadeIn .2s ease;
+}
+.overlay.hidden { display: none; }
+.dialog {
+  background: var(--color-surface);
+  border-radius: var(--radius);
+  padding: 24px;
+  width: calc(100% - 48px);
+  max-width: 340px;
+  text-align: center;
+  box-shadow: var(--shadow-lg);
+}
+.dialog h3 { font-size: 17px; margin-bottom: 8px; }
+.dialog p { font-size: 14px; color: var(--color-text-secondary); margin-bottom: 20px; }
+.dialog-btns { display: flex; gap: 10px; }
+.dialog-btns button {
+  flex: 1;
+  padding: 12px;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  min-height: 44px;
+}
+.dialog-btns .btn-cancel { background: var(--color-border); color: var(--color-text); }
+.dialog-btns .btn-cancel:active { opacity: .7; }
+.dialog-btns .btn-confirm { background: var(--color-danger); color: #fff; }
+.dialog-btns .btn-confirm:active { opacity: .8; }
+
+/* ── Responsive ── */
+@media (min-width: 481px) {
+  .app-container {
+    border-left: 1px solid var(--color-border);
+    border-right: 1px solid var(--color-border);
+  }
+}
+</style>
+</head>
+<body>
+
+<div class="app-container">
+  <!-- Header -->
+  <header class="header">
+    <span class="header-logo">🥬</span>
+    <h1>保质期管家</h1>
+    <p class="subtitle">食材新鲜，一目了然</p>
+  </header>
+
+  <!-- Main Content -->
+  <main class="content">
+    <!-- Add Food Tab -->
+    <section class="tab-content active" id="tab-add">
+      <div class="form-section">
+        <label>🥘 菜品名称</label>
+        <input type="text" class="form-input" id="food-name"
+               placeholder="例如：西红柿、鸡蛋、牛奶…" maxlength="30" autocomplete="off">
+      </div>
+
+      <div class="form-section">
+        <label>🏭 生产日期</label>
+        <input type="date" class="form-input" id="prod-date">
+      </div>
+
+      <div class="form-section">
+        <label>⏳ 保质期（天）</label>
+        <input type="number" class="form-input" id="shelf-life"
+               placeholder="例如：7" min="1" max="3650" inputmode="numeric">
+      </div>
+
+      <div class="expiry-preview hidden" id="expiry-preview">
+        <span class="preview-icon">📆</span>
+        <span id="expiry-preview-text"></span>
+      </div>
+
+      <div class="form-section">
+        <label>📅 到期日期 <span class="hint-text">（可直接输入到期日期）</span></label>
+        <input type="date" class="form-input" id="expiry-date">
+      </div>
+
+      <button class="btn-submit" id="btn-submit" onclick="addFood()">
+        ✅ 添加菜品
+      </button>
+    </section>
+
+    <!-- My Food Tab -->
+    <section class="tab-content" id="tab-my">
+      <div class="list-header">
+        <span class="list-count" id="list-count">共 0 件</span>
+        <button class="btn-clean hidden" id="btn-clean-expired" onclick="cleanExpired()">
+          🧹 清理已过期
+        </button>
+      </div>
+      <div class="food-list" id="food-list"></div>
+      <div class="empty-state" id="empty-state">
+        <span class="icon">🛒</span>
+        <h3>还没有菜品</h3>
+        <p>去「添加菜品」添加第一个吧～</p>
+      </div>
+    </section>
+  </main>
+
+  <!-- Bottom Nav -->
+  <nav class="bottom-nav">
+    <button class="nav-item active" data-tab="tab-add" onclick="switchTab('tab-add')">
+      <span class="nav-icon">➕</span>
+      <span>添加菜品</span>
+    </button>
+    <button class="nav-item" data-tab="tab-my" onclick="switchTab('tab-my')">
+      <span class="nav-icon">📋</span>
+      <span>我的菜品</span>
+    </button>
+  </nav>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<!-- Confirm Dialog -->
+<div class="overlay hidden" id="confirm-overlay">
+  <div class="dialog">
+    <h3>⚠️ 确认删除</h3>
+    <p id="confirm-text">确定要删除这个菜品吗？此操作不可撤销。</p>
+    <div class="dialog-btns">
+      <button class="btn-cancel" onclick="closeConfirm()">取消</button>
+      <button class="btn-confirm" id="btn-confirm-delete" onclick="confirmDelete()">删除</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════
+// 保质期管家 — Food Expiry Tracker PWA
+// ═══════════════════════════════════════════
+
+const STORAGE_KEY = 'food-expiry.v1';
+let items = [];
+let pendingDeleteId = null;
+
+// ── Date Utilities (UTC-based, timezone-safe) ──
+
+/** Parse "YYYY-MM-DD" → [year, month, day] as numbers */
+function parseISO(iso) {
+  const [y, m, d] = iso.split('-');
+  return [+y, +m, +d];
+}
+
+/** Local Date → "YYYY-MM-DD" */
+function toISODate(d) {
+  const p = n => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+}
+
+/** Today as "YYYY-MM-DD" in local timezone */
+function todayISO() {
+  return toISODate(new Date());
+}
+
+/**
+ * Whole-day difference: expiryISO - todayISO.
+ * Uses Date.UTC so DST transitions and timezone offsets cannot skew the result.
+ * Returns negative for past dates, zero for today, positive for future.
+ */
+function daysUntil(expiryISO) {
+  const [ty, tm, td] = parseISO(todayISO());
+  const [ey, em, ed] = parseISO(expiryISO);
+  return Math.round((Date.UTC(ey, em - 1, ed) - Date.UTC(ty, tm - 1, td)) / 86400000);
+}
+
+/**
+ * Add N days to an ISO date string, return "YYYY-MM-DD".
+ * Uses Date.UTC to handle month/year rollover correctly.
+ */
+function addDaysISO(iso, n) {
+  const [y, m, d] = parseISO(iso);
+  const d2 = new Date(Date.UTC(y, m - 1, d + n));
+  return toISODate(d2);
+}
+
+// ── Status helpers ──
+
+function daysLeftLabel(d) {
+  if (d < 0) return '已过期 ' + Math.abs(d) + ' 天';
+  if (d === 0) return '今天到期';
+  if (d === 1) return '明天到期';
+  return '剩 ' + d + ' 天';
+}
+
+function getLevel(d) {
+  if (d < 0) return 'expired';
+  if (d <= 3) return 'danger';
+  if (d <= 7) return 'warning';
+  if (d <= 30) return 'caution';
+  return 'safe';
+}
+
+function getLevelLabel(d) {
+  if (d < 0) return '已过期';
+  if (d <= 3) return '即将过期';
+  if (d <= 7) return '临近过期';
+  if (d <= 30) return '注意食用';
+  return '新鲜安全';
+}
+
+function formatDate(iso) {
+  const [y, m, d] = parseISO(iso);
+  return y + '年' + m + '月' + d + '日';
+}
+
+// ── Data layer ──
+
+function loadItems() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    items = raw ? JSON.parse(raw) : [];
+  } catch { items = []; }
+}
+
+function saveItems() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+  } catch {
+    showToast('⚠️ 存储失败，请检查空间');
+  }
+}
+
+function genId() {
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+    return crypto.randomUUID();
+  }
+  return Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 10);
+}
+
+// ── Toast ──
+
+let toastTimer = null;
+function showToast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 1800);
+}
+
+// ── Tab switching ──
+
+function switchTab(tabId) {
+  // Update content sections
+  document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+  document.getElementById(tabId).classList.add('active');
+
+  // Update bottom nav
+  document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+  const navBtn = document.querySelector(`[data-tab="${tabId}"]`);
+  if (navBtn) navBtn.classList.add('active');
+
+  // Update URL hash (no page jump)
+  const hash = tabId === 'tab-add' ? '#add' : '#list';
+  if (location.hash !== hash) {
+    history.replaceState(null, '', hash);
+  }
+
+  // Render list when switching to My Food
+  if (tabId === 'tab-my') renderFoodList();
+}
+
+// ── Live preview + auto-fill expiry date ──
+
+function updatePreview() {
+  const prodDate = document.getElementById('prod-date').value;
+  const days = parseInt(document.getElementById('shelf-life').value);
+  const expiryInput = document.getElementById('expiry-date');
+  const preview = document.getElementById('expiry-preview');
+  const text = document.getElementById('expiry-preview-text');
+
+  // When production date + shelf life are both filled, auto-calculate expiry
+  if (prodDate && days > 0) {
+    const expStr = addDaysISO(prodDate, days);
+    // Only auto-fill if user hasn't manually set a different expiry
+    if (!expiryInput.dataset.manual || expiryInput.dataset.manual === 'false') {
+      expiryInput.value = expStr;
+    }
+    const dl = daysUntil(expStr);
+    text.textContent = '根据保质期计算：' + formatDate(expStr) + '（' + daysLeftLabel(dl) + '）';
+    preview.classList.remove('hidden');
+  } else if (prodDate && !days) {
+    // Only prod date filled - check if direct expiry is set
+    if (expiryInput.value) {
+      const dl = daysUntil(expiryInput.value);
+      text.textContent = '到期日：' + formatDate(expiryInput.value) + '（' + daysLeftLabel(dl) + '）';
+      preview.classList.remove('hidden');
+    } else {
+      preview.classList.add('hidden');
+    }
+  } else {
+    preview.classList.add('hidden');
+  }
+}
+
+// ── Add food ──
+
+function addFood() {
+  const name = document.getElementById('food-name').value.trim();
+  if (!name) { showToast('请输入菜品名称'); return; }
+
+  const prodDate = document.getElementById('prod-date').value;
+  const shelfLifeDays = parseInt(document.getElementById('shelf-life').value);
+  const expiryInput = document.getElementById('expiry-date');
+  const directExpiry = expiryInput.value;
+  const isManualExpiry = expiryInput.dataset.manual === 'true';
+
+  let finalExpiryDate, finalProdDate, finalShelfLife;
+
+  if (isManualExpiry && directExpiry) {
+    // User directly entered the expiry date
+    if (!directExpiry) { showToast('请选择到期日期'); return; }
+    finalExpiryDate = directExpiry;
+    finalProdDate = prodDate || todayISO();
+    // Calculate approximate shelf life
+    const [ey, em, ed] = parseISO(finalExpiryDate);
+    const [py, pm, pd] = parseISO(finalProdDate);
+    finalShelfLife = Math.round((Date.UTC(ey, em - 1, ed) - Date.UTC(py, pm - 1, pd)) / 86400000);
+    if (finalShelfLife < 0) finalShelfLife = 0;
+  } else if (prodDate && shelfLifeDays > 0) {
+    // Calculate expiry from production date + shelf life
+    finalProdDate = prodDate;
+    finalShelfLife = shelfLifeDays;
+    finalExpiryDate = addDaysISO(prodDate, shelfLifeDays);
+  } else if (directExpiry) {
+    // Only expiry date filled
+    finalExpiryDate = directExpiry;
+    finalProdDate = prodDate || todayISO();
+    const [ey, em, ed] = parseISO(finalExpiryDate);
+    const [py, pm, pd] = parseISO(finalProdDate);
+    finalShelfLife = Math.round((Date.UTC(ey, em - 1, ed) - Date.UTC(py, pm - 1, pd)) / 86400000);
+    if (finalShelfLife < 0) finalShelfLife = 0;
+  } else {
+    showToast('请填写生产日期+保质天数，或直接输入到期日期');
+    return;
+  }
+
+  const item = {
+    id: genId(),
+    name,
+    productionDate: finalProdDate,
+    expiryDate: finalExpiryDate,
+    shelfLifeDays: finalShelfLife,
+    createdAt: Date.now(),
+  };
+
+  items.push(item);
+  saveItems();
+  showToast('✅ 「' + name + '」已添加');
+
+  // Reset form
+  document.getElementById('food-name').value = '';
+  document.getElementById('prod-date').value = todayISO();
+  document.getElementById('shelf-life').value = '';
+  document.getElementById('expiry-date').value = '';
+  delete expiryInput.dataset.manual;
+  document.getElementById('expiry-preview').classList.add('hidden');
+  document.getElementById('food-name').focus();
+}
+
+// ── Delete with confirmation ──
+
+function requestDelete(id) {
+  pendingDeleteId = id;
+  const item = items.find(i => i.id === id);
+  document.getElementById('confirm-text').textContent =
+    '确定要删除「' + (item ? item.name : '') + '」吗？此操作不可撤销。';
+  document.getElementById('confirm-overlay').classList.remove('hidden');
+}
+
+function closeConfirm() {
+  pendingDeleteId = null;
+  document.getElementById('confirm-overlay').classList.add('hidden');
+}
+
+function confirmDelete() {
+  if (!pendingDeleteId) return;
+  const item = items.find(i => i.id === pendingDeleteId);
+  items = items.filter(i => i.id !== pendingDeleteId);
+  saveItems();
+  showToast('🗑️ 「' + (item ? item.name : '') + '」已删除');
+  pendingDeleteId = null;
+  document.getElementById('confirm-overlay').classList.add('hidden');
+  renderFoodList();
+}
+
+// ── Mark eaten ──
+
+function markEaten(id) {
+  const item = items.find(i => i.id === id);
+  if (!item) return;
+  items = items.filter(i => i.id !== id);
+  saveItems();
+  showToast('🍽️ 「' + item.name + '」已食用完毕');
+  renderFoodList();
+}
+
+// ── Clean all expired ──
+
+function cleanExpired() {
+  const expiredIds = new Set(
+    items.filter(i => daysUntil(i.expiryDate) < 0).map(i => i.id)
+  );
+  if (expiredIds.size === 0) return;
+  const count = expiredIds.size;
+  items = items.filter(i => !expiredIds.has(i.id));
+  saveItems();
+  showToast('🧹 已清理 ' + count + ' 个过期菜品');
+  renderFoodList();
+}
+
+// ── Render food list (safe DOM construction) ──
+
+function renderFoodList() {
+  const listEl = document.getElementById('food-list');
+  const emptyEl = document.getElementById('empty-state');
+  const countEl = document.getElementById('list-count');
+  const cleanBtn = document.getElementById('btn-clean-expired');
+
+  // Sort: closest expiry first (expired → soon → later)
+  const sorted = [...items].sort((a, b) => {
+    const diff = daysUntil(a.expiryDate) - daysUntil(b.expiryDate);
+    if (diff !== 0) return diff;
+    return a.createdAt - b.createdAt;
+  });
+
+  // Update list header
+  countEl.textContent = '共 ' + sorted.length + ' 件';
+  const hasExpired = sorted.some(i => daysUntil(i.expiryDate) < 0);
+  cleanBtn.classList.toggle('hidden', !hasExpired);
+
+  // Empty state
+  if (sorted.length === 0) {
+    listEl.innerHTML = '';
+    emptyEl.style.display = '';
+    updateBadge(0);
+    return;
+  }
+  emptyEl.style.display = 'none';
+
+  // Build cards using DOM API for XSS safety
+  listEl.innerHTML = '';
+  for (const item of sorted) {
+    const dl = daysUntil(item.expiryDate);
+    const level = getLevel(dl);
+    const isExpired = dl < 0;
+
+    const card = document.createElement('div');
+    card.className = 'food-card ' + level;
+    if (isExpired) card.classList.add('expired');
+
+    // Card header
+    const header = document.createElement('div');
+    header.className = 'card-header';
+
+    const nameSpan = document.createElement('span');
+    nameSpan.className = 'card-name';
+    nameSpan.textContent = item.name;
+
+    const tagSpan = document.createElement('span');
+    tagSpan.className = 'card-tag';
+    tagSpan.textContent = getLevelLabel(dl);
+
+    header.appendChild(nameSpan);
+    header.appendChild(tagSpan);
+
+    // Card dates
+    const dates = document.createElement('div');
+    dates.className = 'card-dates';
+
+    const prodSpan = document.createElement('span');
+    prodSpan.textContent = '🏭 ' + formatDate(item.productionDate);
+    const arrowSpan = document.createElement('span');
+    arrowSpan.textContent = '→';
+    const expSpan = document.createElement('span');
+    expSpan.textContent = '📅 ' + formatDate(item.expiryDate);
+    const dotSpan = document.createElement('span');
+    dotSpan.textContent = '·';
+    const leftSpan = document.createElement('span');
+    leftSpan.textContent = '⏳ ' + daysLeftLabel(dl);
+
+    dates.appendChild(prodSpan);
+    dates.appendChild(arrowSpan);
+    dates.appendChild(expSpan);
+    dates.appendChild(dotSpan);
+    dates.appendChild(leftSpan);
+
+    // Card actions
+    const actions = document.createElement('div');
+    actions.className = 'card-actions';
+
+    const eatBtn = document.createElement('button');
+    eatBtn.className = 'btn-sm eat';
+    eatBtn.textContent = '🍽️ 已食用';
+    eatBtn.addEventListener('click', () => markEaten(item.id));
+
+    const delBtn = document.createElement('button');
+    delBtn.className = 'btn-sm delete';
+    delBtn.textContent = '🗑️ 删除';
+    delBtn.addEventListener('click', () => requestDelete(item.id));
+
+    actions.appendChild(eatBtn);
+    actions.appendChild(delBtn);
+
+    card.appendChild(header);
+    card.appendChild(dates);
+    card.appendChild(actions);
+    listEl.appendChild(card);
+  }
+
+  // Update badge on tab
+  const urgent = sorted.filter(i => daysUntil(i.expiryDate) <= 7).length;
+  updateBadge(urgent);
+}
+
+// ── Badge on "我的菜品" tab ──
+
+function updateBadge(count) {
+  const myTabBtn = document.querySelector('.nav-item[data-tab="tab-my"]');
+  if (!myTabBtn) return;
+  const iconWrap = myTabBtn.querySelector('.nav-icon');
+  let badge = iconWrap ? iconWrap.querySelector('.nav-badge') : null;
+
+  if (count > 0) {
+    if (!badge) {
+      badge = document.createElement('span');
+      badge.className = 'nav-badge';
+      if (iconWrap) iconWrap.appendChild(badge);
+    }
+    badge.textContent = count > 99 ? '99+' : String(count);
+  } else {
+    if (badge) badge.remove();
+  }
+}
+
+// ── Init ──
+
+function init() {
+  loadItems();
+
+  // Set default production date to today
+  document.getElementById('prod-date').value = todayISO();
+
+  // Live preview on any form change
+  document.getElementById('prod-date').addEventListener('input', () => {
+    // User is using production date + shelf life mode → allow auto-fill
+    const expiryInput = document.getElementById('expiry-date');
+    expiryInput.dataset.manual = 'false';
+    updatePreview();
+  });
+  document.getElementById('shelf-life').addEventListener('input', () => {
+    const expiryInput = document.getElementById('expiry-date');
+    expiryInput.dataset.manual = 'false';
+    updatePreview();
+  });
+  // When user manually changes the expiry date, mark as manual
+  document.getElementById('expiry-date').addEventListener('input', () => {
+    const expiryInput = document.getElementById('expiry-date');
+    expiryInput.dataset.manual = 'true';
+    updatePreview();
+  });
+
+  // Allow Enter key in name field to submit
+  document.getElementById('food-name').addEventListener('keydown', e => {
+    if (e.key === 'Enter') addFood();
+  });
+
+  // Restore tab from URL hash
+  const hash = location.hash;
+  if (hash === '#list') {
+    switchTab('tab-my');
+  } else {
+    switchTab('tab-add');
+    if (!hash) history.replaceState(null, '', '#add');
+  }
+
+  renderFoodList();
+}
+
+// ── Day-rollover refresh ──
+// Re-render when the user returns to the app (covers overnight / next-day opens)
+
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') {
+    // Recompute today in case the date changed
+    const tabMy = document.getElementById('tab-my');
+    if (tabMy.classList.contains('active')) {
+      renderFoodList();
+    }
+    // Update default date values
+    const today = todayISO();
+    const prodEl = document.getElementById('prod-date');
+    const expEl = document.getElementById('expiry-date');
+    if (prodEl && !prodEl.value) prodEl.value = today;
+    // Keep expiry date empty - user fills it or it auto-calculates
+  }
+});
+
+window.addEventListener('pageshow', () => {
+  const tabMy = document.getElementById('tab-my');
+  if (tabMy.classList.contains('active')) {
+    renderFoodList();
+  }
+});
+
+// ── Storage sync across tabs ──
+
+window.addEventListener('storage', e => {
+  if (e.key === STORAGE_KEY) {
+    loadItems();
+    const tabMy = document.getElementById('tab-my');
+    if (tabMy.classList.contains('active')) {
+      renderFoodList();
+    }
+  }
+});
+
+// ── Bootstrap ──
+
+document.addEventListener('DOMContentLoaded', init);
+
+// ── Service Worker registration (progressive enhancement) ──
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  });
+}
+</script>
+</body>
+</html>

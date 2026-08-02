@@ -1,0 +1,20 @@
+{
+  "name": "保质期管家 - 食品保质期追踪",
+  "short_name": "保质期管家",
+  "description": "轻松管理食品保质期，食材新鲜一目了然",
+  "start_url": ".",
+  "scope": ".",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#F8FAFC",
+  "theme_color": "#4F46E5",
+  "lang": "zh-CN",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
