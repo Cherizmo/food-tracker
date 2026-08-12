@@ -3,12 +3,14 @@
 // Cache-first for static assets, network-first for navigations
 // ═══════════════════════════════════════════
 
-const CACHE_NAME = 'food-expiry-v3';
+const CACHE_NAME = 'food-expiry-v5';
 const SHELL_FILES = [
   './',
   './index.html',
   './manifest.json',
-  './icon.svg'
+  './icon.svg',
+  './supabase.min.js',
+  './591.supabase.js'
 ];
 
 // Install: pre-cache the app shell

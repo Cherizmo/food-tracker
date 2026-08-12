@@ -85,6 +85,41 @@ body {
 .header h1 { font-size: 18px; font-weight: 700; letter-spacing: -.3px; }
 .header .subtitle { font-size: 12px; color: var(--color-text-secondary); }
 
+/* ── User Bar ── */
+.user-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 6px;
+  font-size: 11px;
+  color: var(--color-text-secondary);
+}
+.user-bar.hidden { display: none; }
+.user-bar .user-email { font-weight: 600; }
+.user-bar .btn-logout {
+  background: none;
+  border: 1px solid var(--color-border);
+  padding: 2px 8px;
+  border-radius: 99px;
+  font-size: 10px;
+  cursor: pointer;
+  color: var(--color-text-secondary);
+}
+.user-bar .btn-logout:active { background: var(--color-danger-bg); color: var(--color-danger); }
+.sync-pill {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 99px;
+  background: var(--color-safe-bg);
+  color: var(--color-safe);
+  white-space: nowrap;
+}
+.sync-pill.offline { background: var(--color-warning-bg); color: var(--color-warning); }
+.sync-pill.error { background: var(--color-danger-bg); color: var(--color-danger); }
+.sync-pill.local { background: var(--color-border); color: var(--color-text-secondary); }
+
 /* ── Content ── */
 .content { flex: 1; padding: 16px 20px; padding-bottom: calc(88px + var(--safe-bottom)); }
 .tab-content { display: none; animation: fadeIn .25s ease; }
@@ -422,6 +457,132 @@ body {
 .dialog-btns .btn-cancel:active { opacity: .7; }
 .dialog-btns .btn-confirm { background: var(--color-danger); color: #fff; }
 .dialog-btns .btn-confirm:active { opacity: .8; }
+.dialog-btns .btn-primary { background: var(--color-primary); color: #fff; }
+.dialog-btns .btn-primary:active { opacity: .8; }
+
+/* ── Auth Screen ── */
+.auth-screen {
+  position: fixed;
+  inset: 0;
+  background: var(--color-bg);
+  z-index: 200;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+.auth-screen.hidden { display: none; }
+.auth-card {
+  background: var(--color-surface);
+  border-radius: var(--radius);
+  padding: 32px 24px;
+  width: 100%;
+  max-width: 360px;
+  box-shadow: var(--shadow-lg);
+}
+.auth-card .auth-logo { text-align: center; margin-bottom: 20px; }
+.auth-card .auth-logo .icon { font-size: 48px; }
+.auth-card .auth-logo h2 { font-size: 20px; font-weight: 700; margin-top: 8px; }
+.auth-card .auth-logo .desc { font-size: 13px; color: var(--color-text-secondary); margin-top: 4px; }
+.auth-tabs {
+  display: flex;
+  background: var(--color-border);
+  border-radius: var(--radius-xs);
+  padding: 3px;
+  margin-bottom: 20px;
+}
+.auth-tabs button {
+  flex: 1;
+  padding: 10px;
+  border: none;
+  background: transparent;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: all .2s;
+  min-height: 44px;
+}
+.auth-tabs button.active {
+  background: var(--color-surface);
+  color: var(--color-primary);
+  box-shadow: var(--shadow);
+}
+.auth-field { margin-bottom: 14px; }
+.auth-field label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  margin-bottom: 4px;
+  text-transform: none;
+}
+.auth-field input {
+  width: 100%;
+  padding: 14px 16px;
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font-size: 16px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  outline: none;
+  transition: border-color .2s;
+}
+.auth-field input:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(79,70,229,.1);
+}
+.auth-error {
+  font-size: 13px;
+  color: var(--color-danger);
+  text-align: center;
+  margin-bottom: 12px;
+  min-height: 18px;
+}
+.btn-auth {
+  width: 100%;
+  padding: 14px;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  background: var(--color-primary);
+  color: #fff;
+  transition: all .2s;
+  min-height: 44px;
+}
+.btn-auth:active { transform: scale(.98); opacity: .9; }
+.btn-auth:disabled { opacity: .6; pointer-events: none; }
+.btn-offline {
+  width: 100%;
+  padding: 12px;
+  border: none;
+  background: none;
+  color: var(--color-text-secondary);
+  font-size: 13px;
+  cursor: pointer;
+  margin-top: 8px;
+  min-height: 44px;
+}
+.btn-offline:active { opacity: .6; }
+.auth-footer {
+  text-align: center;
+  margin-top: 12px;
+  font-size: 13px;
+  color: var(--color-text-secondary);
+}
+.auth-footer button {
+  background: none;
+  border: none;
+  color: var(--color-primary);
+  font-weight: 700;
+  cursor: pointer;
+  font-size: inherit;
+  text-decoration: underline;
+}
 
 /* ── Responsive ── */
 @media (min-width: 481px) {
@@ -434,12 +595,46 @@ body {
 </head>
 <body>
 
+<!-- Auth Screen -->
+<div class="auth-screen hidden" id="auth-screen">
+  <div class="auth-card">
+    <div class="auth-logo">
+      <span class="icon">🥬</span>
+      <h2>保质期管家</h2>
+      <p class="desc">登录后可跨设备同步数据</p>
+    </div>
+    <div class="auth-tabs">
+      <button class="active" data-auth-tab="login" onclick="switchAuthTab('login')">登录</button>
+      <button data-auth-tab="register" onclick="switchAuthTab('register')">注册</button>
+    </div>
+    <div class="auth-error" id="auth-error"></div>
+    <div class="auth-field">
+      <label>📧 邮箱</label>
+      <input type="email" class="auth-field-input form-input" id="auth-email" placeholder="your@email.com" autocomplete="email">
+    </div>
+    <div class="auth-field">
+      <label>🔒 密码</label>
+      <input type="password" class="auth-field-input form-input" id="auth-password" placeholder="至少 6 位" autocomplete="current-password">
+    </div>
+    <button class="btn-auth" id="btn-auth-submit" onclick="handleAuth()">登录</button>
+    <button class="btn-offline" id="btn-offline-mode" onclick="enterOfflineMode()">离线使用（数据保存在本机）</button>
+    <p class="auth-footer" id="auth-switch-hint">
+      还没有账号？<button onclick="switchAuthTab('register')">立即注册</button>
+    </p>
+  </div>
+</div>
+
 <div class="app-container">
   <!-- Header -->
   <header class="header">
     <span class="header-logo">🥬</span>
     <h1>保质期管家</h1>
     <p class="subtitle">食材新鲜，一目了然</p>
+    <div class="user-bar hidden" id="user-bar">
+      <span class="sync-pill local" id="sync-pill">本机模式</span>
+      <span class="user-email" id="user-email"></span>
+      <button class="btn-logout" onclick="handleLogout()">退出</button>
+    </div>
   </header>
 
   <!-- Main Content -->
@@ -518,7 +713,7 @@ body {
 <!-- Toast -->
 <div class="toast" id="toast"></div>
 
-<!-- Confirm Dialog -->
+<!-- Confirm Delete Dialog -->
 <div class="overlay hidden" id="confirm-overlay">
   <div class="dialog">
     <h3>⚠️ 确认删除</h3>
@@ -530,102 +725,93 @@ body {
   </div>
 </div>
 
+<!-- Migration Dialog -->
+<div class="overlay hidden" id="migrate-overlay">
+  <div class="dialog">
+    <h3>📦 发现本地数据</h3>
+    <p id="migrate-text">检测到本机有 <strong id="migrate-count">0</strong> 件菜品数据，是否迁移到云端？</p>
+    <div class="dialog-btns">
+      <button class="btn-cancel" onclick="skipMigration()">暂不迁移</button>
+      <button class="btn-primary" onclick="doMigration()">同步到云端</button>
+    </div>
+  </div>
+</div>
+
 <script>
 // ═══════════════════════════════════════════
 // 保质期管家 — Food Expiry Tracker PWA
+// Cloud Sync powered by Supabase
 // ═══════════════════════════════════════════
 
-const STORAGE_KEY = 'food-expiry.v1';
+// ── Config ──
+// !! 替换为你的 Supabase 项目信息（在 supabase.com 项目设置 → API 中获取）
+const SUPABASE_URL = 'https://rquitlqknltflapwmrzy.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_m9egWLDQlnlZNHLHJLrvDA_mU1PfP1P';
+
+const STORAGE_KEY = 'food-expiry.v1';       // 本地缓存（云同步后仍保留作为离线兜底）
+const TOMBSTONE_KEY = 'food-expiry.deleted'; // 待同步的删除记录
+const SYNC_META_KEY = 'food-expiry.meta';    // 同步元数据
+
+let supabase = null;
 let items = [];
 let pendingDeleteId = null;
+let session = null;
+let tombstones = [];   // [{id, deletedAt}]
+let syncMeta = null;   // {userId, lastSyncedAt, migrationHandled}
+let authMode = 'login'; // 'login' | 'register'
 
 // ── Date Utilities (UTC-based, timezone-safe) ──
 
-/** Parse "YYYY-MM-DD" → [year, month, day] as numbers */
 function parseISO(iso) {
   const [y, m, d] = iso.split('-');
   return [+y, +m, +d];
 }
 
-/** Local Date → "YYYY-MM-DD" */
 function toISODate(d) {
   const p = n => String(n).padStart(2, '0');
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
 }
 
-/** Today as "YYYY-MM-DD" in local timezone */
-function todayISO() {
-  return toISODate(new Date());
-}
+function todayISO() { return toISODate(new Date()); }
 
-/**
- * Whole-day difference: expiryISO - todayISO.
- * Uses Date.UTC so DST transitions and timezone offsets cannot skew the result.
- * Returns negative for past dates, zero for today, positive for future.
- */
 function daysUntil(expiryISO) {
   const [ty, tm, td] = parseISO(todayISO());
   const [ey, em, ed] = parseISO(expiryISO);
   return Math.round((Date.UTC(ey, em - 1, ed) - Date.UTC(ty, tm - 1, td)) / 86400000);
 }
 
-/**
- * Add N days to an ISO date string, return "YYYY-MM-DD".
- * Uses Date.UTC to handle month/year rollover correctly.
- */
 function addDaysISO(iso, n) {
   const [y, m, d] = parseISO(iso);
-  const d2 = new Date(Date.UTC(y, m - 1, d + n));
-  return toISODate(d2);
+  return toISODate(new Date(Date.UTC(y, m - 1, d + n)));
 }
 
-/**
- * Add value * units to an ISO date. Handles month/year rollover
- * correctly (Jan 31 + 1 month → Feb 28, Feb 29 + 1 year → Feb 28).
- */
 function addTimeISO(iso, value, unit) {
   if (!value || value <= 0) return iso;
   const [y, m, d] = parseISO(iso);
   const p = n => String(n).padStart(2, '0');
-
-  if (unit === 'day') {
-    return addDaysISO(iso, value);
-  }
+  if (unit === 'day') return addDaysISO(iso, value);
   if (unit === 'month') {
     const totalMonths = m - 1 + value;
     const newYear = y + Math.floor(totalMonths / 12);
     const newMonth = (totalMonths % 12 + 12) % 12;
-    // Days in the target month (Date.UTC day 0 = last day of previous month)
     const daysInNewMonth = new Date(Date.UTC(newYear, newMonth + 1, 0)).getUTCDate();
-    const newDay = Math.min(d, daysInNewMonth);
-    return `${newYear}-${p(newMonth + 1)}-${p(newDay)}`;
+    return `${newYear}-${p(newMonth + 1)}-${p(Math.min(d, daysInNewMonth))}`;
   }
   if (unit === 'year') {
     const newYear = y + value;
-    // Handle Feb 29 in leap year → Feb 28 in non-leap year
     const daysInMonth = new Date(Date.UTC(newYear, m, 0)).getUTCDate();
-    const newDay = Math.min(d, daysInMonth);
-    return `${newYear}-${p(m)}-${p(newDay)}`;
+    return `${newYear}-${p(m)}-${p(Math.min(d, daysInMonth))}`;
   }
   return iso;
 }
 
-/**
- * Reverse-compute shelf-life value in the given unit between two dates.
- * Used when the user manually enters an expiry date.
- */
 function computeShelfLife(prodISO, expiryISO, unit) {
   const [py, pm, pd] = parseISO(prodISO);
   const [ey, em, ed] = parseISO(expiryISO);
   const totalDays = Math.round((Date.UTC(ey, em - 1, ed) - Date.UTC(py, pm - 1, pd)) / 86400000);
-
   if (unit === 'day') return Math.max(0, totalDays);
   if (unit === 'year') return Math.max(0, Math.round(totalDays / 365));
-  // month: count how many months fit between prod and expiry
-  if (unit === 'month') {
-    // Round to nearest month using average month length
-    return Math.max(0, Math.round(totalDays / 30.4375));
-  }
+  if (unit === 'month') return Math.max(0, Math.round(totalDays / 30.4375));
   return Math.max(0, totalDays);
 }
 
@@ -667,20 +853,189 @@ function formatShelfLife(item) {
   return '保质期 ' + val + ' 天';
 }
 
+// ── Supabase / Sync Engine ──
+
+function initSupabase() {
+  if (typeof window.supabase === 'undefined') {
+    supabase = null;
+    return;
+  }
+  supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+}
+
+function isOnline() { return navigator.onLine; }
+
+// Convert Supabase row → local item format
+function rowToItem(r) {
+  return {
+    id: r.id,
+    name: r.name,
+    productionDate: r.production_date,
+    expiryDate: r.expiry_date,
+    shelfLifeDays: r.shelf_life_days,
+    shelfLifeUnit: r.shelf_life_unit || 'day',
+    createdAt: r.created_at,
+    updatedAt: r.updated_at || r.created_at
+  };
+}
+
+// Convert local item → Supabase row
+function itemToRow(item) {
+  return {
+    id: item.id,
+    user_id: session.user.id,
+    name: item.name,
+    production_date: item.productionDate,
+    expiry_date: item.expiryDate,
+    shelf_life_days: item.shelfLifeDays,
+    shelf_life_unit: item.shelfLifeUnit || 'day',
+    created_at: item.createdAt,
+    updated_at: item.updatedAt || item.createdAt
+  };
+}
+
+function loadCache() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch { return []; }
+}
+
+function saveCache(arr) {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(arr)); } catch {}
+}
+
+function loadTombstones() {
+  try { tombstones = JSON.parse(localStorage.getItem(TOMBSTONE_KEY)) || []; } catch { tombstones = []; }
+}
+
+function saveTombstones() {
+  try { localStorage.setItem(TOMBSTONE_KEY, JSON.stringify(tombstones)); } catch {}
+}
+
+function loadSyncMeta() {
+  try {
+    const key = SYNC_META_KEY;
+    syncMeta = JSON.parse(localStorage.getItem(key)) || null;
+  } catch { syncMeta = null; }
+}
+
+function saveSyncMeta() {
+  try { localStorage.setItem(SYNC_META_KEY, JSON.stringify(syncMeta)); } catch {}
+}
+
+function setSyncStatus(state) {
+  const el = document.getElementById('sync-pill');
+  if (!el) return;
+  const map = {
+    synced:  ['✓ 已同步', ''],
+    syncing: ['⟳ 同步中…', ''],
+    offline: ['📴 离线', 'offline'],
+    error:   ['⚠ 同步失败', 'error'],
+    local:   ['本机模式', 'local'],
+  };
+  const [text, cls] = map[state] || map.local;
+  el.textContent = text;
+  el.className = 'sync-pill ' + (cls || '');
+}
+
+async function syncNow() {
+  if (!session || !supabase || !isOnline()) return;
+  setSyncStatus('syncing');
+
+  try {
+    // Phase 1 — Pull all from server, merge by updatedAt (LWW)
+    const { data: rows, error } = await supabase
+      .from('food_items')
+      .select('*')
+      .eq('user_id', session.user.id);
+
+    if (error) throw error;
+
+    const serverMap = new Map((rows || []).map(r => [r.id, r]));
+    const localMap = new Map(items.map(i => [i.id, i]));
+    const tombSet = new Set(tombstones.map(t => t.id));
+
+    // Push local items newer than server (or missing on server)
+    for (const item of items) {
+      const srv = serverMap.get(item.id);
+      const itemUpd = item.updatedAt || item.createdAt;
+      if (!srv || itemUpd > (srv.updated_at || srv.created_at)) {
+        await supabase.from('food_items').upsert(itemToRow(item), { onConflict: 'id' });
+      }
+    }
+
+    // Push deletes
+    const surviving = [];
+    for (const t of tombstones) {
+      if (serverMap.has(t.id)) {
+        await supabase.from('food_items').delete().eq('id', t.id).eq('user_id', session.user.id);
+      }
+      // If not on server, tombstone is stale — prune it
+    }
+    tombstones = []; // all processed
+    saveTombstones();
+
+    // Phase 2 — Merge server data into local (LWW)
+    let changed = false;
+    for (const [id, row] of serverMap) {
+      if (tombSet.has(id)) continue; // was deleted locally before sync
+      const local = localMap.get(id);
+      const rowUpd = row.updated_at || row.created_at;
+      if (!local) {
+        items.push(rowToItem(row));
+        changed = true;
+      } else {
+        const localUpd = local.updatedAt || local.createdAt;
+        if (rowUpd > localUpd) {
+          Object.assign(local, rowToItem(row));
+          changed = true;
+        }
+      }
+    }
+
+    if (changed) {
+      saveCache(items);
+      renderFoodList();
+    }
+
+    syncMeta = syncMeta || {};
+    syncMeta.lastSyncedAt = Date.now();
+    saveSyncMeta();
+    setSyncStatus('synced');
+  } catch (e) {
+    console.error('Sync error:', e);
+    setSyncStatus('error');
+  }
+}
+
+let syncTimer = null;
+function scheduleSync() {
+  if (!session || !supabase) return;
+  clearTimeout(syncTimer);
+  syncTimer = setTimeout(syncNow, 800);
+}
+
+function markDirty(item) {
+  item.updatedAt = Date.now();
+}
+
 // ── Data layer ──
 
 function loadItems() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    items = raw ? JSON.parse(raw) : [];
-  } catch { items = []; }
-}
+  // Try cache first (instant load)
+  items = loadCache();
 
-function saveItems() {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
-  } catch {
-    showToast('⚠️ 存储失败，请检查空间');
+  // Normalize legacy items (add updatedAt if missing)
+  let normalized = false;
+  for (const it of items) {
+    if (!it.updatedAt) { it.updatedAt = it.createdAt || Date.now(); normalized = true; }
+  }
+  if (normalized) saveCache(items);
+
+  // If logged in, schedule a cloud sync (will merge in background)
+  if (session && supabase && isOnline()) {
+    scheduleSync();
   }
 }
 
@@ -705,22 +1060,18 @@ function showToast(msg) {
 // ── Tab switching ──
 
 function switchTab(tabId) {
-  // Update content sections
   document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
   document.getElementById(tabId).classList.add('active');
 
-  // Update bottom nav
   document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
   const navBtn = document.querySelector(`[data-tab="${tabId}"]`);
   if (navBtn) navBtn.classList.add('active');
 
-  // Update URL hash (no page jump)
   const hash = tabId === 'tab-add' ? '#add' : '#list';
   if (location.hash !== hash) {
     history.replaceState(null, '', hash);
   }
 
-  // Render list when switching to My Food
   if (tabId === 'tab-my') renderFoodList();
 }
 
@@ -734,10 +1085,8 @@ function updatePreview() {
   const preview = document.getElementById('expiry-preview');
   const text = document.getElementById('expiry-preview-text');
 
-  // When production date + shelf life are both filled, auto-calculate expiry
   if (prodDate && days > 0) {
     const expStr = addTimeISO(prodDate, days, unit);
-    // Only auto-fill if user hasn't manually set a different expiry
     if (!expiryInput.dataset.manual || expiryInput.dataset.manual === 'false') {
       expiryInput.value = expStr;
     }
@@ -745,7 +1094,6 @@ function updatePreview() {
     text.textContent = '根据保质期计算：' + formatDate(expStr) + '（' + daysLeftLabel(dl) + '）';
     preview.classList.remove('hidden');
   } else if (prodDate && !days) {
-    // Only prod date filled - check if direct expiry is set
     if (expiryInput.value) {
       const dl = daysUntil(expiryInput.value);
       text.textContent = '到期日：' + formatDate(expiryInput.value) + '（' + daysLeftLabel(dl) + '）';
@@ -779,20 +1127,17 @@ function addFood() {
   let finalExpiryDate, finalProdDate, finalShelfLife, finalShelfLifeUnit;
 
   if (isManualExpiry && directExpiry) {
-    // User directly entered the expiry date
     if (!directExpiry) { showToast('请选择到期日期'); return; }
     finalExpiryDate = directExpiry;
     finalProdDate = prodDate || todayISO();
     finalShelfLifeUnit = shelfLifeUnit;
     finalShelfLife = computeShelfLife(finalProdDate, finalExpiryDate, shelfLifeUnit);
   } else if (prodDate && shelfLifeValue > 0) {
-    // Calculate expiry from production date + shelf life
     finalProdDate = prodDate;
     finalShelfLife = shelfLifeValue;
     finalShelfLifeUnit = shelfLifeUnit;
     finalExpiryDate = addTimeISO(prodDate, shelfLifeValue, shelfLifeUnit);
   } else if (directExpiry) {
-    // Only expiry date filled
     finalExpiryDate = directExpiry;
     finalProdDate = prodDate || todayISO();
     finalShelfLifeUnit = shelfLifeUnit;
@@ -802,6 +1147,7 @@ function addFood() {
     return;
   }
 
+  const now = Date.now();
   const item = {
     id: genId(),
     name,
@@ -809,12 +1155,25 @@ function addFood() {
     expiryDate: finalExpiryDate,
     shelfLifeDays: finalShelfLife,
     shelfLifeUnit: finalShelfLifeUnit,
-    createdAt: Date.now(),
+    createdAt: now,
+    updatedAt: now,
   };
 
   items.push(item);
-  saveItems();
+  saveCache(items);
   showToast('✅ 「' + name + '」已添加');
+
+  if (session && supabase && isOnline()) {
+    // Immediate push to cloud
+    supabase.from('food_items').upsert(itemToRow(item), { onConflict: 'id' })
+      .then(({ error }) => {
+        if (!error) setSyncStatus('synced');
+        else setSyncStatus('error');
+      });
+  } else if (session) {
+    scheduleSync();
+    showToast('📡 离线模式，联网后自动同步');
+  }
 
   // Reset form
   document.getElementById('food-name').value = '';
@@ -841,40 +1200,100 @@ function closeConfirm() {
   document.getElementById('confirm-overlay').classList.add('hidden');
 }
 
-function confirmDelete() {
+async function confirmDelete() {
   if (!pendingDeleteId) return;
   const item = items.find(i => i.id === pendingDeleteId);
-  items = items.filter(i => i.id !== pendingDeleteId);
-  saveItems();
+  const id = pendingDeleteId;
+  items = items.filter(i => i.id !== id);
+  saveCache(items);
+
+  // Queue tombstone for cloud sync
+  tombstones.push({ id, deletedAt: Date.now() });
+  saveTombstones();
+
   showToast('🗑️ 「' + (item ? item.name : '') + '」已删除');
   pendingDeleteId = null;
   document.getElementById('confirm-overlay').classList.add('hidden');
   renderFoodList();
+
+  // Push delete to cloud
+  if (session && supabase && isOnline()) {
+    const { error } = await supabase.from('food_items').delete().eq('id', id).eq('user_id', session.user.id);
+    if (!error) {
+      tombstones = tombstones.filter(t => t.id !== id);
+      saveTombstones();
+      setSyncStatus('synced');
+    } else {
+      scheduleSync();
+    }
+  } else if (session) {
+    scheduleSync();
+  }
 }
 
 // ── Mark eaten ──
 
-function markEaten(id) {
+async function markEaten(id) {
   const item = items.find(i => i.id === id);
   if (!item) return;
   items = items.filter(i => i.id !== id);
-  saveItems();
+  saveCache(items);
+
+  tombstones.push({ id, deletedAt: Date.now() });
+  saveTombstones();
+
   showToast('🍽️ 「' + item.name + '」已食用完毕');
   renderFoodList();
+
+  if (session && supabase && isOnline()) {
+    const { error } = await supabase.from('food_items').delete().eq('id', id).eq('user_id', session.user.id);
+    if (!error) {
+      tombstones = tombstones.filter(t => t.id !== id);
+      saveTombstones();
+      setSyncStatus('synced');
+    } else {
+      scheduleSync();
+    }
+  } else if (session) {
+    scheduleSync();
+  }
 }
 
 // ── Clean all expired ──
 
-function cleanExpired() {
-  const expiredIds = new Set(
-    items.filter(i => daysUntil(i.expiryDate) < 0).map(i => i.id)
-  );
-  if (expiredIds.size === 0) return;
-  const count = expiredIds.size;
-  items = items.filter(i => !expiredIds.has(i.id));
-  saveItems();
+async function cleanExpired() {
+  const expired = items.filter(i => daysUntil(i.expiryDate) < 0);
+  if (expired.length === 0) return;
+
+  const count = expired.length;
+  const ids = expired.map(i => i.id);
+  items = items.filter(i => !ids.includes(i.id));
+  saveCache(items);
+
+  for (const id of ids) {
+    tombstones.push({ id, deletedAt: Date.now() });
+  }
+  saveTombstones();
+
   showToast('🧹 已清理 ' + count + ' 个过期菜品');
   renderFoodList();
+
+  if (session && supabase && isOnline()) {
+    // Delete each from Supabase
+    let anyFailed = false;
+    for (const id of ids) {
+      const { error } = await supabase.from('food_items').delete().eq('id', id).eq('user_id', session.user.id);
+      if (!error) {
+        tombstones = tombstones.filter(t => t.id !== id);
+      } else {
+        anyFailed = true;
+      }
+    }
+    saveTombstones();
+    setSyncStatus(anyFailed ? 'error' : 'synced');
+  } else if (session) {
+    scheduleSync();
+  }
 }
 
 // ── Render food list (safe DOM construction) ──
@@ -885,19 +1304,16 @@ function renderFoodList() {
   const countEl = document.getElementById('list-count');
   const cleanBtn = document.getElementById('btn-clean-expired');
 
-  // Sort: closest expiry first (expired → soon → later)
   const sorted = [...items].sort((a, b) => {
     const diff = daysUntil(a.expiryDate) - daysUntil(b.expiryDate);
     if (diff !== 0) return diff;
-    return a.createdAt - b.createdAt;
+    return (a.createdAt || 0) - (b.createdAt || 0);
   });
 
-  // Update list header
   countEl.textContent = '共 ' + sorted.length + ' 件';
   const hasExpired = sorted.some(i => daysUntil(i.expiryDate) < 0);
   cleanBtn.classList.toggle('hidden', !hasExpired);
 
-  // Empty state
   if (sorted.length === 0) {
     listEl.innerHTML = '';
     emptyEl.style.display = '';
@@ -906,7 +1322,6 @@ function renderFoodList() {
   }
   emptyEl.style.display = 'none';
 
-  // Build cards using DOM API for XSS safety
   listEl.innerHTML = '';
   for (const item of sorted) {
     const dl = daysUntil(item.expiryDate);
@@ -917,7 +1332,6 @@ function renderFoodList() {
     card.className = 'food-card ' + level;
     if (isExpired) card.classList.add('expired');
 
-    // Card header
     const header = document.createElement('div');
     header.className = 'card-header';
 
@@ -932,7 +1346,6 @@ function renderFoodList() {
     header.appendChild(nameSpan);
     header.appendChild(tagSpan);
 
-    // Card dates
     const dates = document.createElement('div');
     dates.className = 'card-dates';
 
@@ -959,7 +1372,6 @@ function renderFoodList() {
     dates.appendChild(dotSpan2);
     dates.appendChild(leftSpan);
 
-    // Card actions
     const actions = document.createElement('div');
     actions.className = 'card-actions';
 
@@ -982,12 +1394,9 @@ function renderFoodList() {
     listEl.appendChild(card);
   }
 
-  // Update badge on tab
   const urgent = sorted.filter(i => daysUntil(i.expiryDate) <= 7).length;
   updateBadge(urgent);
 }
-
-// ── Badge on "我的菜品" tab ──
 
 function updateBadge(count) {
   const myTabBtn = document.querySelector('.nav-item[data-tab="tab-my"]');
@@ -1007,39 +1416,198 @@ function updateBadge(count) {
   }
 }
 
+// ── Auth ──
+
+function showAuthScreen() {
+  document.getElementById('auth-screen').classList.remove('hidden');
+  document.getElementById('auth-error').textContent = '';
+}
+
+function hideAuthScreen() {
+  document.getElementById('auth-screen').classList.add('hidden');
+}
+
+function switchAuthTab(mode) {
+  authMode = mode;
+  document.querySelectorAll('[data-auth-tab]').forEach(b => b.classList.remove('active'));
+  document.querySelector(`[data-auth-tab="${mode}"]`).classList.add('active');
+  document.getElementById('btn-auth-submit').textContent = mode === 'login' ? '登录' : '注册';
+  document.getElementById('auth-switch-hint').innerHTML = mode === 'login'
+    ? '还没有账号？<button onclick="switchAuthTab(\'register\')">立即注册</button>'
+    : '已有账号？<button onclick="switchAuthTab(\'login\')">去登录</button>';
+  document.getElementById('auth-error').textContent = '';
+}
+
+async function handleAuth() {
+  const email = document.getElementById('auth-email').value.trim();
+  const password = document.getElementById('auth-password').value;
+  const errEl = document.getElementById('auth-error');
+
+  if (!email || !password) { errEl.textContent = '请输入邮箱和密码'; return; }
+  if (password.length < 6) { errEl.textContent = '密码至少需要 6 位'; return; }
+
+  errEl.textContent = '';
+  const btn = document.getElementById('btn-auth-submit');
+  btn.disabled = true;
+
+  try {
+    if (!supabase) { errEl.textContent = '云服务未配置，请设置 Supabase 密钥'; btn.disabled = false; return; }
+
+    const { data, error } = authMode === 'login'
+      ? await supabase.auth.signInWithPassword({ email, password })
+      : await supabase.auth.signUp({ email, password });
+
+    if (error) {
+      // Friendlier messages for common cases
+      if (authMode === 'register' && /already registered|already exists/i.test(error.message)) {
+        switchAuthTab('login');
+        errEl.textContent = '该邮箱已注册，请直接登录';
+      } else if (/Email not confirmed/i.test(error.message)) {
+        errEl.textContent = '邮箱未确认。请在 Supabase SQL Editor 运行确认 SQL，或换一个邮箱注册';
+      } else if (/Invalid login credentials/i.test(error.message)) {
+        errEl.textContent = '邮箱或密码错误';
+      } else {
+        errEl.textContent = error.message || '操作失败，请重试';
+      }
+      btn.disabled = false;
+      return;
+    }
+
+    if (authMode === 'register' && data.user && !data.session) {
+      errEl.textContent = '注册成功！请查收验证邮件后登录';
+    } else if (data.session) {
+      // Signup auto-login or login success — call handleSignedIn directly as a
+      // safety net (onAuthStateChange may also fire; handleSignedIn is idempotent)
+      handleSignedIn(data.session.user);
+    }
+  } catch (e) {
+    errEl.textContent = e.message || '操作失败，请重试';
+  }
+  btn.disabled = false;
+}
+
+async function handleSignedIn(newSession) {
+  session = newSession;
+  loadSyncMeta();
+
+  // Account isolation: different user → clear local cache
+  if (syncMeta && syncMeta.userId && syncMeta.userId !== session.user.id) {
+    items = [];
+    tombstones = [];
+    saveCache(items);
+    saveTombstones();
+    loadSyncMeta();
+    syncMeta = null;
+  }
+
+  if (!syncMeta) {
+    syncMeta = { userId: session.user.id, lastSyncedAt: null, migrationHandled: false };
+  }
+  syncMeta.userId = session.user.id;
+  saveSyncMeta();
+
+  hideAuthScreen();
+
+  // Show user info
+  document.getElementById('user-bar').classList.remove('hidden');
+  document.getElementById('user-email').textContent = session.user.email;
+  setSyncStatus('syncing');
+
+  // Load cached data + sync from cloud
+  loadItems();
+  renderFoodList();
+
+  // Check if migration needed
+  if (items.length > 0 && !syncMeta.migrationHandled) {
+    document.getElementById('migrate-count').textContent = items.length;
+    document.getElementById('migrate-overlay').classList.remove('hidden');
+  } else {
+    syncNow();
+  }
+}
+
+async function handleLogout() {
+  if (supabase && session) {
+    await supabase.auth.signOut();
+  }
+  session = null;
+  document.getElementById('user-bar').classList.add('hidden');
+  document.getElementById('sync-pill').className = 'sync-pill local';
+  document.getElementById('sync-pill').textContent = '本机模式';
+  showAuthScreen();
+  showToast('已退出登录，本地数据已保留');
+}
+
+function enterOfflineMode() {
+  hideAuthScreen();
+  setSyncStatus('local');
+  document.getElementById('user-bar').classList.remove('hidden');
+  document.getElementById('user-email').textContent = '离线模式';
+  document.getElementById('user-bar').querySelector('.btn-logout').style.display = 'none';
+  loadItems();
+  renderFoodList();
+  showToast('📡 离线模式，数据保存在本机');
+}
+
+// ── Migration ──
+
+async function doMigration() {
+  document.getElementById('migrate-overlay').classList.add('hidden');
+
+  if (!session || !supabase || !isOnline()) {
+    showToast('请联网后再试');
+    return;
+  }
+
+  const rows = items.map(itemToRow);
+  setSyncStatus('syncing');
+
+  try {
+    // Batch insert in chunks of 50
+    for (let i = 0; i < rows.length; i += 50) {
+      const chunk = rows.slice(i, i + 50);
+      const { error } = await supabase.from('food_items').upsert(chunk, { onConflict: 'id' });
+      if (error) throw error;
+    }
+    syncMeta.migrationHandled = true;
+    saveSyncMeta();
+    setSyncStatus('synced');
+    showToast('✅ 已同步 ' + rows.length + ' 件菜品到云端');
+  } catch (e) {
+    setSyncStatus('error');
+    showToast('⚠️ 迁移失败：' + (e.message || '未知错误'));
+  }
+}
+
+function skipMigration() {
+  document.getElementById('migrate-overlay').classList.add('hidden');
+  syncMeta.migrationHandled = true;
+  saveSyncMeta();
+  if (session && supabase && isOnline()) syncNow();
+}
+
 // ── Init ──
 
-function init() {
-  loadItems();
-
-  // Set default production date to today
+function wireForm() {
   document.getElementById('prod-date').value = todayISO();
 
-  // Live preview on any form change
   document.getElementById('prod-date').addEventListener('input', () => {
-    // User is using production date + shelf life mode → allow auto-fill
-    const expiryInput = document.getElementById('expiry-date');
-    expiryInput.dataset.manual = 'false';
+    document.getElementById('expiry-date').dataset.manual = 'false';
     updatePreview();
   });
   document.getElementById('shelf-life').addEventListener('input', () => {
-    const expiryInput = document.getElementById('expiry-date');
-    expiryInput.dataset.manual = 'false';
+    document.getElementById('expiry-date').dataset.manual = 'false';
     updatePreview();
   });
-  // When user manually changes the expiry date, mark as manual
   document.getElementById('expiry-date').addEventListener('input', () => {
-    const expiryInput = document.getElementById('expiry-date');
-    expiryInput.dataset.manual = 'true';
+    document.getElementById('expiry-date').dataset.manual = 'true';
     updatePreview();
   });
 
-  // Allow Enter key in name field to submit
   document.getElementById('food-name').addEventListener('keydown', e => {
     if (e.key === 'Enter') addFood();
   });
 
-  // Unit selector: switch between 天/月/年 and adjust max
   document.querySelectorAll('#shelf-life-unit .unit-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       document.querySelectorAll('#shelf-life-unit .unit-btn').forEach(b => b.classList.remove('active'));
@@ -1053,6 +1621,56 @@ function init() {
     });
   });
 
+  // Auth password Enter key
+  document.getElementById('auth-password').addEventListener('keydown', e => {
+    if (e.key === 'Enter') handleAuth();
+  });
+  document.getElementById('auth-email').addEventListener('keydown', e => {
+    if (e.key === 'Enter') document.getElementById('auth-password').focus();
+  });
+}
+
+// ── Supabase SDK dynamic loader (never blocks the app) ──
+
+let sdkLoadPromise = null;
+function ensureSupabaseSDK(timeoutMs) {
+  if (typeof window.supabase !== 'undefined') return Promise.resolve(true);
+  if (sdkLoadPromise) return sdkLoadPromise;
+
+  sdkLoadPromise = new Promise(resolve => {
+    // Local copy first — works without any CDN
+    const s = document.createElement('script');
+    s.src = 'supabase.min.js';
+    const timer = setTimeout(() => { s.remove(); resolve(false); }, timeoutMs || 10000);
+    s.onload = () => { clearTimeout(timer); resolve(true); };
+    s.onerror = () => {
+      // Fallback to CDN if local file missing
+      clearTimeout(timer);
+      s.remove();
+      const s2 = document.createElement('script');
+      s2.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js';
+      const timer2 = setTimeout(() => { s2.remove(); resolve(false); }, 8000);
+      s2.onload = () => { clearTimeout(timer2); resolve(true); };
+      s2.onerror = () => { clearTimeout(timer2); resolve(false); };
+      document.head.appendChild(s2);
+    };
+    document.head.appendChild(s);
+  });
+  return sdkLoadPromise;
+}
+
+function boot() {
+  loadTombstones();
+  items = loadCache();
+  // Normalize legacy items
+  let normalized = false;
+  for (const it of items) {
+    if (!it.updatedAt) { it.updatedAt = it.createdAt || Date.now(); normalized = true; }
+  }
+  if (normalized) saveCache(items);
+
+  wireForm();
+
   // Restore tab from URL hash
   const hash = location.hash;
   if (hash === '#list') {
@@ -1062,42 +1680,114 @@ function init() {
     if (!hash) history.replaceState(null, '', '#add');
   }
 
-  renderFoodList();
+  // Load Supabase SDK in background — app is fully usable meanwhile
+  ensureSupabaseSDK().then(sdkOk => {
+    if (!sdkOk) {
+      // SDK unavailable — enter offline mode
+      enterOfflineMode();
+      return;
+    }
+    initSupabase();
+    if (!supabase) {
+      enterOfflineMode();
+      return;
+    }
+    checkSession();
+  });
 }
 
-// ── Day-rollover refresh ──
-// Re-render when the user returns to the app (covers overnight / next-day opens)
+function checkSession() {
+  // Timeout fallback: if Supabase is unreachable, show auth screen after 5s
+  let authResolved = false;
+  const authTimeout = setTimeout(() => {
+    if (!authResolved) {
+      authResolved = true;
+      showAuthScreen();
+      loadItems();
+      renderFoodList();
+    }
+  }, 5000);
+
+  supabase.auth.getSession()
+    .then(({ data }) => {
+      if (authResolved) return;
+      authResolved = true;
+      clearTimeout(authTimeout);
+
+      if (data.session) {
+        handleSignedIn(data.session.user);
+      } else {
+        showAuthScreen();
+        loadItems();
+        renderFoodList();
+      }
+    })
+    .catch(() => {
+      if (authResolved) return;
+      authResolved = true;
+      clearTimeout(authTimeout);
+      // Supabase unreachable — show auth screen, user can go offline
+      showAuthScreen();
+      loadItems();
+      renderFoodList();
+    });
+
+  // Listen for auth state changes
+  supabase.auth.onAuthStateChange((event, ses) => {
+    if (event === 'SIGNED_IN' && ses) {
+      handleSignedIn(ses.user);
+    } else if (event === 'SIGNED_OUT') {
+      session = null;
+      document.getElementById('user-bar').classList.add('hidden');
+      showAuthScreen();
+    }
+  });
+}
+
+// ── Day-rollover + sync on resume ──
 
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'visible') {
-    // Recompute today in case the date changed
     const tabMy = document.getElementById('tab-my');
-    if (tabMy.classList.contains('active')) {
+    if (tabMy && tabMy.classList.contains('active')) {
       renderFoodList();
     }
-    // Update default date values
     const today = todayISO();
     const prodEl = document.getElementById('prod-date');
-    const expEl = document.getElementById('expiry-date');
     if (prodEl && !prodEl.value) prodEl.value = today;
-    // Keep expiry date empty - user fills it or it auto-calculates
+
+    // Sync on return to app
+    if (session && supabase && isOnline()) syncNow();
   }
 });
 
 window.addEventListener('pageshow', () => {
   const tabMy = document.getElementById('tab-my');
-  if (tabMy.classList.contains('active')) {
+  if (tabMy && tabMy.classList.contains('active')) {
     renderFoodList();
   }
+});
+
+window.addEventListener('online', () => {
+  if (session && supabase) {
+    setSyncStatus('syncing');
+    syncNow();
+  }
+  showToast('📡 网络已恢复');
+});
+
+window.addEventListener('offline', () => {
+  if (session) setSyncStatus('offline');
+  showToast('📡 已切换到离线模式');
 });
 
 // ── Storage sync across tabs ──
 
 window.addEventListener('storage', e => {
   if (e.key === STORAGE_KEY) {
-    loadItems();
+    items = loadCache();
     const tabMy = document.getElementById('tab-my');
-    if (tabMy.classList.contains('active')) {
+    if (tabMy && tabMy.classList.contains('active')) {
       renderFoodList();
     }
   }
@@ -1105,7 +1795,7 @@ window.addEventListener('storage', e => {
 
 // ── Bootstrap ──
 
-document.addEventListener('DOMContentLoaded', init);
+document.addEventListener('DOMContentLoaded', boot);
 
 // ── Service Worker registration (progressive enhancement) ──
 
