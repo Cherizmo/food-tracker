@@ -3,7 +3,7 @@
 // Cache-first for static assets, network-first for navigations
 // ═══════════════════════════════════════════
 
-const CACHE_NAME = 'food-expiry-v5';
+const CACHE_NAME = 'food-expiry-v6';
 const SHELL_FILES = [
   './',
   './index.html',

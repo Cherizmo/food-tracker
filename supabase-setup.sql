@@ -12,7 +12,8 @@ CREATE TABLE IF NOT EXISTS food_items (
   expiry_date TEXT NOT NULL,
   shelf_life_days INTEGER NOT NULL,
   shelf_life_unit TEXT DEFAULT 'day',
-  created_at BIGINT NOT NULL DEFAULT 0
+  created_at BIGINT NOT NULL DEFAULT 0,
+  updated_at BIGINT NOT NULL DEFAULT 0
 );
 
 -- 2. 启用 Row Level Security

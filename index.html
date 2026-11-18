@@ -344,6 +344,62 @@ body {
 .btn-sm.delete { color: var(--color-danger); border-color: var(--color-danger-border); }
 .btn-sm.delete:active { background: var(--color-danger); color: #fff; border-color: var(--color-danger); }
 
+/* ── Card Edit Button (⋮) ── */
+.btn-edit {
+  width: 36px;
+  height: 36px;
+  margin: -5px -4px 0 4px;
+  padding: 0;
+  border: 1.5px solid var(--color-border);
+  border-radius: 99px;
+  background: rgba(255,255,255,.65);
+  color: var(--color-text-secondary);
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all .2s;
+  position: relative;
+}
+.btn-edit::after { content: ''; position: absolute; inset: -6px; } /* 扩大手机触控区域 */
+.btn-edit:hover { background: #fff; color: var(--color-primary); border-color: var(--color-primary); }
+.btn-edit:active { transform: scale(.9); background: var(--color-primary-light); color: var(--color-primary); border-color: var(--color-primary); }
+
+/* ── Edit Toolbar ── */
+.edit-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+.edit-toolbar.hidden { display: none; }
+.btn-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 8px 14px;
+  min-height: 40px;
+  border: 1.5px solid var(--color-border);
+  border-radius: 99px;
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all .2s;
+  white-space: nowrap;
+}
+.btn-back:active { transform: scale(.96); background: var(--color-primary-light); color: var(--color-primary); border-color: var(--color-primary); }
+.edit-title {
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -.2px;
+}
+
 /* ── Bottom Nav ── */
 .bottom-nav {
   position: fixed;
@@ -641,14 +697,19 @@ body {
   <main class="content">
     <!-- Add Food Tab -->
     <section class="tab-content active" id="tab-add">
-      <div class="form-section">
-        <label>🥘 菜品名称</label>
-        <input type="text" class="form-input" id="food-name"
-               placeholder="请添加菜品并填写生产日期及保质期…" maxlength="30" autocomplete="off">
+      <div class="edit-toolbar hidden" id="edit-toolbar">
+        <button class="btn-back" onclick="cancelEdit()">‹ 返回列表</button>
+        <span class="edit-title">✏️ 编辑菜品</span>
       </div>
 
       <div class="form-section">
-        <label>🏭 生产日期</label>
+        <label>🥘 菜品名称</label>
+        <input type="text" class="form-input" id="food-name"
+               placeholder="请输入菜品名称…" maxlength="30" autocomplete="off">
+      </div>
+
+      <div class="form-section">
+        <label>🏭 生产日期 <span class="hint-text">（选填，清空则仅记录到期日）</span></label>
         <input type="date" class="form-input" id="prod-date">
       </div>
 
@@ -675,7 +736,7 @@ body {
         <input type="date" class="form-input" id="expiry-date">
       </div>
 
-      <button class="btn-submit" id="btn-submit" onclick="addFood()">
+      <button class="btn-submit" id="btn-submit" onclick="submitForm()">
         ✅ 添加菜品
       </button>
     </section>
@@ -755,6 +816,7 @@ const SYNC_META_KEY = 'food-expiry.meta';    // 同步元数据
 let supabase = null;
 let items = [];
 let pendingDeleteId = null;
+let editingId = null;        // 正在编辑的菜品 id（null = 添加模式）
 let session = null;
 let tombstones = [];   // [{id, deletedAt}]
 let syncMeta = null;   // {userId, lastSyncedAt, migrationHandled}
@@ -1060,6 +1122,9 @@ function showToast(msg) {
 // ── Tab switching ──
 
 function switchTab(tabId) {
+  // 从底部导航离开编辑视图时，自动退出编辑并复位表单
+  if (editingId) exitEditMode();
+
   document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
   document.getElementById(tabId).classList.add('active');
 
@@ -1087,20 +1152,20 @@ function updatePreview() {
 
   if (prodDate && days > 0) {
     const expStr = addTimeISO(prodDate, days, unit);
-    if (!expiryInput.dataset.manual || expiryInput.dataset.manual === 'false') {
-      expiryInput.value = expStr;
-    }
-    const dl = daysUntil(expStr);
-    text.textContent = '根据保质期计算：' + formatDate(expStr) + '（' + daysLeftLabel(dl) + '）';
-    preview.classList.remove('hidden');
-  } else if (prodDate && !days) {
-    if (expiryInput.value) {
+    const isManual = expiryInput.dataset.manual === 'true';
+    if (!isManual) expiryInput.value = expStr;
+    if (isManual && expiryInput.value && expiryInput.value !== expStr) {
       const dl = daysUntil(expiryInput.value);
-      text.textContent = '到期日：' + formatDate(expiryInput.value) + '（' + daysLeftLabel(dl) + '）';
-      preview.classList.remove('hidden');
+      text.textContent = '手动到期日：' + formatDate(expiryInput.value) + '（' + daysLeftLabel(dl) + '）';
     } else {
-      preview.classList.add('hidden');
+      const dl = daysUntil(expStr);
+      text.textContent = '根据保质期计算：' + formatDate(expStr) + '（' + daysLeftLabel(dl) + '）';
     }
+    preview.classList.remove('hidden');
+  } else if (expiryInput.value) {
+    const dl = daysUntil(expiryInput.value);
+    text.textContent = '到期日：' + formatDate(expiryInput.value) + '（' + daysLeftLabel(dl) + '）';
+    preview.classList.remove('hidden');
   } else {
     preview.classList.add('hidden');
   }
@@ -1111,11 +1176,11 @@ function getSelectedUnit() {
   return activeBtn ? activeBtn.dataset.unit : 'day';
 }
 
-// ── Add food ──
+// ── Add / Edit food（共享表单读取） ──
 
-function addFood() {
+function readForm() {
   const name = document.getElementById('food-name').value.trim();
-  if (!name) { showToast('请输入菜品名称'); return; }
+  if (!name) { showToast('请输入菜品名称'); return null; }
 
   const prodDate = document.getElementById('prod-date').value;
   const shelfLifeValue = parseInt(document.getElementById('shelf-life').value);
@@ -1127,11 +1192,15 @@ function addFood() {
   let finalExpiryDate, finalProdDate, finalShelfLife, finalShelfLifeUnit;
 
   if (isManualExpiry && directExpiry) {
-    if (!directExpiry) { showToast('请选择到期日期'); return; }
     finalExpiryDate = directExpiry;
-    finalProdDate = prodDate || todayISO();
     finalShelfLifeUnit = shelfLifeUnit;
-    finalShelfLife = computeShelfLife(finalProdDate, finalExpiryDate, shelfLifeUnit);
+    if (prodDate) {
+      finalProdDate = prodDate;
+      finalShelfLife = computeShelfLife(prodDate, finalExpiryDate, shelfLifeUnit);
+    } else {
+      finalProdDate = '';      // 无生产日期 → 仅记录到期日
+      finalShelfLife = 0;
+    }
   } else if (prodDate && shelfLifeValue > 0) {
     finalProdDate = prodDate;
     finalShelfLife = shelfLifeValue;
@@ -1139,30 +1208,38 @@ function addFood() {
     finalExpiryDate = addTimeISO(prodDate, shelfLifeValue, shelfLifeUnit);
   } else if (directExpiry) {
     finalExpiryDate = directExpiry;
-    finalProdDate = prodDate || todayISO();
     finalShelfLifeUnit = shelfLifeUnit;
-    finalShelfLife = computeShelfLife(finalProdDate, finalExpiryDate, shelfLifeUnit);
+    if (prodDate) {
+      finalProdDate = prodDate;
+      finalShelfLife = computeShelfLife(prodDate, finalExpiryDate, shelfLifeUnit);
+    } else {
+      finalProdDate = '';      // 无生产日期 → 仅记录到期日
+      finalShelfLife = 0;
+    }
   } else {
     showToast('请填写生产日期+保质期，或直接输入到期日期');
-    return;
+    return null;
   }
 
-  const now = Date.now();
-  const item = {
-    id: genId(),
+  return {
     name,
     productionDate: finalProdDate,
     expiryDate: finalExpiryDate,
     shelfLifeDays: finalShelfLife,
     shelfLifeUnit: finalShelfLifeUnit,
-    createdAt: now,
-    updatedAt: now,
   };
+}
 
-  items.push(item);
-  saveCache(items);
-  showToast('✅ 「' + name + '」已添加');
+function resetForm() {
+  document.getElementById('food-name').value = '';
+  document.getElementById('prod-date').value = todayISO();
+  document.getElementById('shelf-life').value = '';
+  document.getElementById('expiry-date').value = '';
+  delete document.getElementById('expiry-date').dataset.manual;
+  document.getElementById('expiry-preview').classList.add('hidden');
+}
 
+function pushToCloud(item) {
   if (session && supabase && isOnline()) {
     // Immediate push to cloud
     supabase.from('food_items').upsert(itemToRow(item), { onConflict: 'id' })
@@ -1174,15 +1251,95 @@ function addFood() {
     scheduleSync();
     showToast('📡 离线模式，联网后自动同步');
   }
+}
 
-  // Reset form
-  document.getElementById('food-name').value = '';
-  document.getElementById('prod-date').value = todayISO();
-  document.getElementById('shelf-life').value = '';
-  document.getElementById('expiry-date').value = '';
-  delete expiryInput.dataset.manual;
-  document.getElementById('expiry-preview').classList.add('hidden');
+function addFood() {
+  const fields = readForm();
+  if (!fields) return;
+
+  const now = Date.now();
+  const item = Object.assign({ id: genId(), createdAt: now, updatedAt: now }, fields);
+
+  items.push(item);
+  saveCache(items);
+  showToast('✅ 「' + item.name + '」已添加');
+  pushToCloud(item);
+
+  resetForm();
   document.getElementById('food-name').focus();
+}
+
+// ── Edit existing item ──
+
+function submitForm() {
+  if (editingId) saveEdit();
+  else addFood();
+}
+
+function startEdit(id) {
+  const item = items.find(i => i.id === id);
+  if (!item) { showToast('未找到该菜品'); return; }
+
+  // 先切到添加页视图（此时尚未进入编辑状态）
+  switchTab('tab-add');
+  editingId = id;
+
+  document.getElementById('food-name').value = item.name;
+  document.getElementById('prod-date').value = item.productionDate;
+  document.getElementById('shelf-life').value = item.shelfLifeDays || '';
+  document.getElementById('expiry-date').value = item.expiryDate;
+
+  // 恢复单位选择
+  const unit = item.shelfLifeUnit || 'day';
+  document.querySelectorAll('#shelf-life-unit .unit-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.unit === unit);
+  });
+  const shelfInput = document.getElementById('shelf-life');
+  if (unit === 'day') shelfInput.max = 3650;
+  else if (unit === 'month') shelfInput.max = 120;
+  else shelfInput.max = 10;
+
+  // 到期日与「生产日期+保质期」计算一致 → 保持联动；
+  // 否则视为手动到期日，保存时不被静默改写
+  const expiryInput = document.getElementById('expiry-date');
+  const computed = addTimeISO(item.productionDate, item.shelfLifeDays, unit);
+  expiryInput.dataset.manual = (item.expiryDate === computed) ? 'false' : 'true';
+
+  updatePreview();
+
+  document.getElementById('edit-toolbar').classList.remove('hidden');
+  document.getElementById('btn-submit').textContent = '💾 保存修改';
+  window.scrollTo(0, 0);
+}
+
+function saveEdit() {
+  const fields = readForm();
+  if (!fields) return;
+
+  const item = items.find(i => i.id === editingId);
+  if (!item) { showToast('未找到该菜品'); exitEditMode(); return; }
+
+  Object.assign(item, fields);
+  markDirty(item);
+  saveCache(items);
+  showToast('✅ 「' + item.name + '」已保存修改');
+  pushToCloud(item);
+
+  exitEditMode();
+  switchTab('tab-my'); // 返回列表
+}
+
+function cancelEdit() {
+  exitEditMode();
+  switchTab('tab-my');
+}
+
+function exitEditMode() {
+  if (!editingId) return;
+  editingId = null;
+  document.getElementById('edit-toolbar').classList.add('hidden');
+  document.getElementById('btn-submit').textContent = '✅ 添加菜品';
+  resetForm();
 }
 
 // ── Delete with confirmation ──
@@ -1343,33 +1500,48 @@ function renderFoodList() {
     tagSpan.className = 'card-tag';
     tagSpan.textContent = getLevelLabel(dl);
 
+    const editBtn = document.createElement('button');
+    editBtn.className = 'btn-edit';
+    editBtn.textContent = '⋮';
+    editBtn.setAttribute('aria-label', '编辑菜品');
+    editBtn.addEventListener('click', () => startEdit(item.id));
+
     header.appendChild(nameSpan);
     header.appendChild(tagSpan);
+    header.appendChild(editBtn);
 
     const dates = document.createElement('div');
     dates.className = 'card-dates';
 
-    const prodSpan = document.createElement('span');
-    prodSpan.textContent = '🏭 ' + formatDate(item.productionDate);
-    const arrowSpan = document.createElement('span');
-    arrowSpan.textContent = '→';
     const expSpan = document.createElement('span');
     expSpan.textContent = '📅 ' + formatDate(item.expiryDate);
     const dotSpan = document.createElement('span');
     dotSpan.textContent = '·';
-    const shelfSpan = document.createElement('span');
-    shelfSpan.textContent = '📦 ' + formatShelfLife(item);
-    const dotSpan2 = document.createElement('span');
-    dotSpan2.textContent = '·';
     const leftSpan = document.createElement('span');
     leftSpan.textContent = '⏳ ' + daysLeftLabel(dl);
 
-    dates.appendChild(prodSpan);
-    dates.appendChild(arrowSpan);
+    // 有生产日期 → 「生产日期 → 到期日期 · 保质期」；仅到期日 → 只展示到期日期
+    if (item.productionDate) {
+      const prodSpan = document.createElement('span');
+      prodSpan.textContent = '🏭 ' + formatDate(item.productionDate);
+      const arrowSpan = document.createElement('span');
+      arrowSpan.textContent = '→';
+      dates.appendChild(prodSpan);
+      dates.appendChild(arrowSpan);
+    }
+
     dates.appendChild(expSpan);
     dates.appendChild(dotSpan);
-    dates.appendChild(shelfSpan);
-    dates.appendChild(dotSpan2);
+
+    if (item.productionDate && item.shelfLifeDays > 0) {
+      const shelfSpan = document.createElement('span');
+      shelfSpan.textContent = '📦 ' + formatShelfLife(item);
+      const dotSpan2 = document.createElement('span');
+      dotSpan2.textContent = '·';
+      dates.appendChild(shelfSpan);
+      dates.appendChild(dotSpan2);
+    }
+
     dates.appendChild(leftSpan);
 
     const actions = document.createElement('div');
@@ -1605,7 +1777,7 @@ function wireForm() {
   });
 
   document.getElementById('food-name').addEventListener('keydown', e => {
-    if (e.key === 'Enter') addFood();
+    if (e.key === 'Enter') submitForm();
   });
 
   document.querySelectorAll('#shelf-life-unit .unit-btn').forEach(btn => {
@@ -1754,7 +1926,8 @@ document.addEventListener('visibilitychange', () => {
     }
     const today = todayISO();
     const prodEl = document.getElementById('prod-date');
-    if (prodEl && !prodEl.value) prodEl.value = today;
+    // 编辑中不自动回填，避免覆盖用户清空的生产日期
+    if (prodEl && !prodEl.value && !editingId) prodEl.value = today;
 
     // Sync on return to app
     if (session && supabase && isOnline()) syncNow();
