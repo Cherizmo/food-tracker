@@ -655,35 +655,6 @@ body {
 </head>
 <body>
 
-<!-- Auth Screen -->
-<div class="auth-screen hidden" id="auth-screen">
-  <div class="auth-card">
-    <div class="auth-logo">
-      <span class="icon">🥬</span>
-      <h2>保质期管家</h2>
-      <p class="desc">登录后可跨设备同步数据</p>
-    </div>
-    <div class="auth-tabs">
-      <button class="active" data-auth-tab="login" onclick="switchAuthTab('login')">登录</button>
-      <button data-auth-tab="register" onclick="switchAuthTab('register')">注册</button>
-    </div>
-    <div class="auth-error" id="auth-error"></div>
-    <div class="auth-field">
-      <label>📧 邮箱</label>
-      <input type="email" class="auth-field-input form-input" id="auth-email" placeholder="your@email.com" autocomplete="email">
-    </div>
-    <div class="auth-field">
-      <label>🔒 密码</label>
-      <input type="password" class="auth-field-input form-input" id="auth-password" placeholder="至少 6 位" autocomplete="current-password">
-    </div>
-    <button class="btn-auth" id="btn-auth-submit" onclick="handleAuth()">登录</button>
-    <button class="btn-offline" id="btn-offline-mode" onclick="enterOfflineMode()">📴 离线使用（数据保存在本机）</button>
-    <p class="auth-footer" id="auth-switch-hint">
-      还没有账号？<button onclick="switchAuthTab('register')">立即注册</button>
-    </p>
-  </div>
-</div>
-
 <div class="app-container">
   <!-- Header -->
   <header class="header">
@@ -693,7 +664,6 @@ body {
     <div class="user-bar hidden" id="user-bar">
       <span class="sync-pill local" id="sync-pill">本机模式</span>
       <span class="user-email" id="user-email"></span>
-      <button class="btn-logout" onclick="handleLogout()">退出</button>
     </div>
   </header>
 
@@ -1595,12 +1565,15 @@ function updateBadge(count) {
 // ── Auth ──
 
 function showAuthScreen() {
-  document.getElementById('auth-screen').classList.remove('hidden');
+  const el = document.getElementById('auth-screen');
+  if (!el) return; // 仅离线版本无登录界面
+  el.classList.remove('hidden');
   document.getElementById('auth-error').textContent = '';
 }
 
 function hideAuthScreen() {
-  document.getElementById('auth-screen').classList.add('hidden');
+  const el = document.getElementById('auth-screen');
+  if (el) el.classList.add('hidden');
 }
 
 function switchAuthTab(mode) {
@@ -1719,7 +1692,6 @@ function enterOfflineMode() {
   setSyncStatus('local');
   document.getElementById('user-bar').classList.remove('hidden');
   document.getElementById('user-email').textContent = '离线模式';
-  document.getElementById('user-bar').querySelector('.btn-logout').style.display = 'none';
   loadItems();
   renderFoodList();
   showToast('📡 离线模式，数据保存在本机');
@@ -1796,14 +1768,6 @@ function wireForm() {
       updatePreview();
     });
   });
-
-  // Auth password Enter key
-  document.getElementById('auth-password').addEventListener('keydown', e => {
-    if (e.key === 'Enter') handleAuth();
-  });
-  document.getElementById('auth-email').addEventListener('keydown', e => {
-    if (e.key === 'Enter') document.getElementById('auth-password').focus();
-  });
 }
 
 // ── Supabase SDK dynamic loader (never blocks the app) ──
@@ -1856,20 +1820,8 @@ function boot() {
     if (!hash) history.replaceState(null, '', '#add');
   }
 
-  // Load Supabase SDK in background — app is fully usable meanwhile
-  ensureSupabaseSDK().then(sdkOk => {
-    if (!sdkOk) {
-      // SDK unavailable — enter offline mode
-      enterOfflineMode();
-      return;
-    }
-    initSupabase();
-    if (!supabase) {
-      enterOfflineMode();
-      return;
-    }
-    checkSession();
-  });
+  // 仅离线模式：不加载云服务，直接进入本机模式
+  enterOfflineMode();
 }
 
 function checkSession() {
