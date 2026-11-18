@@ -661,10 +661,6 @@ body {
     <span class="header-logo">🥬</span>
     <h1>保质期管家</h1>
     <p class="subtitle">食材新鲜，一目了然</p>
-    <div class="user-bar hidden" id="user-bar">
-      <span class="sync-pill local" id="sync-pill">本机模式</span>
-      <span class="user-email" id="user-email"></span>
-    </div>
   </header>
 
   <!-- Main Content -->
@@ -1689,9 +1685,6 @@ async function handleLogout() {
 
 function enterOfflineMode() {
   hideAuthScreen();
-  setSyncStatus('local');
-  document.getElementById('user-bar').classList.remove('hidden');
-  document.getElementById('user-email').textContent = '离线模式';
   loadItems();
   renderFoodList();
   showToast('📡 离线模式，数据保存在本机');
