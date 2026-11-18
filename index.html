@@ -615,15 +615,19 @@ body {
 .btn-offline {
   width: 100%;
   padding: 12px;
-  border: none;
-  background: none;
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg);
   color: var(--color-text-secondary);
   font-size: 13px;
+  font-weight: 600;
   cursor: pointer;
-  margin-top: 8px;
+  margin-top: 12px;
   min-height: 44px;
+  transition: all .2s;
 }
-.btn-offline:active { opacity: .6; }
+.btn-offline:hover { border-color: #CBD5E1; color: var(--color-text); }
+.btn-offline:active { transform: scale(.98); background: var(--color-primary-light); border-color: var(--color-primary); color: var(--color-primary); }
 .auth-footer {
   text-align: center;
   margin-top: 12px;
@@ -673,7 +677,7 @@ body {
       <input type="password" class="auth-field-input form-input" id="auth-password" placeholder="至少 6 位" autocomplete="current-password">
     </div>
     <button class="btn-auth" id="btn-auth-submit" onclick="handleAuth()">登录</button>
-    <button class="btn-offline" id="btn-offline-mode" onclick="enterOfflineMode()">离线使用（数据保存在本机）</button>
+    <button class="btn-offline" id="btn-offline-mode" onclick="enterOfflineMode()">📴 离线使用（数据保存在本机）</button>
     <p class="auth-footer" id="auth-switch-hint">
       还没有账号？<button onclick="switchAuthTab('register')">立即注册</button>
     </p>
